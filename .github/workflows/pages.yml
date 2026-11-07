@@ -1,0 +1,57 @@
+name: Deploy blog
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  # 可选:每天自动跟随子项目最新 main
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 取消注释即可在每次构建时自动使用子项目远端 main 的最新提交
+      # - run: git submodule update --remote --merge subprojects/linux-arch-dia
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+
+      - name: Attach linux-arch-dia
+        run: |
+          mkdir -p _site/linux-arch-dia
+          rsync -a --delete subprojects/linux-arch-dia/site/ _site/linux-arch-dia/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

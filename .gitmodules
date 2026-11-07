@@ -1,0 +1,3 @@
+[submodule "subprojects/linux-arch-dia"]
+	path = subprojects/linux-arch-dia
+	url = https://github.com/zhang-ruyi/linux-arch-dia.git
