@@ -2,6 +2,7 @@ title: Ruy 的博客
 description: 存储、AI 推理、AI 原生操作系统与 Linux 内核的架构、时序与源码笔记
 lang: zh-CN
 timezone: Asia/Shanghai
+future: true
 
 url: "https://zhang-ruyi.github.io"
 baseurl: "/ruy"
