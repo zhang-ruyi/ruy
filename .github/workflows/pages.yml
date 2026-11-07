@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -27,6 +27,14 @@ jobs:
 
       # 取消注释即可在每次构建时自动使用子项目远端 main 的最新提交
       # - run: git submodule update --remote --merge subprojects/linux-arch-dia
+
+      # 把子项目产物放进 Jekyll 源目录,构建时由 Jekyll 原样拷贝到 _site
+      # (Jekyll 的 Docker action 以 root 生成 _site,构建后再写入会无权限)
+      - name: Stage linux-arch-dia
+        run: |
+          rm -rf linux-arch-dia
+          mkdir -p linux-arch-dia
+          rsync -a subprojects/linux-arch-dia/site/ linux-arch-dia/
 
       # enablement 需要非 GITHUB_TOKEN 的 PAT,故不启用;
       # 请先在 Settings → Pages → Source 选择 GitHub Actions。
@@ -37,18 +45,13 @@ jobs:
           source: ./
           destination: ./_site
 
-      - name: Attach linux-arch-dia
-        run: |
-          mkdir -p _site/linux-arch-dia
-          rsync -a --delete subprojects/linux-arch-dia/site/ _site/linux-arch-dia/
-
       - uses: actions/upload-pages-artifact@v5
         with:
           path: ./_site
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
