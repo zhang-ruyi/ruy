@@ -1,0 +1,28 @@
+---
+layout: default
+title: 文章
+description: 存储、AI 推理、AI 原生操作系统与 Linux 内核的架构与时序笔记
+---
+<section class="page-head">
+  <h1>文章</h1>
+  <p>按主题筛选:存储、AI 推理、AI 原生操作系统、Linux 深度解读。</p>
+  <div class="filters">
+    <button class="chip active" data-filter="all">全部</button>
+    {% for cat in site.data.categories %}
+    <button class="chip" data-filter="{{ cat.slug }}">{{ cat.name }}</button>
+    {% endfor %}
+  </div>
+</section>
+
+<ul class="post-list" id="post-list">
+  {% for post in site.posts %}
+  <li class="post-item" data-cats="{{ post.categories | join: ' ' }}">
+    <a href="{{ post.url | relative_url }}">
+      <time>{{ post.date | date: '%Y-%m-%d' }}</time>
+      <span class="post-title">{{ post.title }}</span>
+      <span class="post-excerpt">{{ post.excerpt | strip_html | normalize_whitespace | truncate: 140 }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+<p class="empty" id="filter-empty" style="display:none">该专栏暂时还没有文章,敬请期待。</p>

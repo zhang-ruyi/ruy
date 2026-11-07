@@ -1,0 +1,16 @@
+- slug: storage
+  name: 存储技术
+  desc: NVMe、块层、文件系统、页缓存、持久化内存与分布式存储
+  accent: "#4f8cff"
+- slug: ai-inference
+  name: AI 推理
+  desc: 推理引擎、KV Cache、批处理调度、显存管理与硬件加速
+  accent: "#8b5cf6"
+- slug: ai-native-os
+  name: AI 原生操作系统
+  desc: 面向模型运行时的系统抽象、资源调度与新内核形态
+  accent: "#22c55e"
+- slug: linux
+  name: Linux 深度解读
+  desc: 内核源码、子系统机制、并发模型与性能分析
+  accent: "#f59e0b"

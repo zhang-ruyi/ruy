@@ -1,7 +1,9 @@
 ---
-layout: default
+layout: post
 title: "Linux 内核原理图解(Archify 交互图集)"
 date: 2026-11-07
+categories: [linux]
+description: 44 张可交互的 Linux 内核原理图与逐函数调用链
 ---
 [Linux 内核原理图解](https://github.com/zhang-ruyi/linux-arch-dia) 用 Archify 对 Linux 内核源码(v7.2-rc3)做了系统化整理,包含:
 

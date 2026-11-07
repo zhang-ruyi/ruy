@@ -1,13 +1,19 @@
 title: Ruy 的博客
-description: Linux 内核与系统原理笔记
+description: 存储、AI 推理、AI 原生操作系统与 Linux 内核的架构、时序与源码笔记
 lang: zh-CN
+timezone: Asia/Shanghai
 
 url: "https://zhang-ruyi.github.io"
 baseurl: "/ruy.github.io"
 
 markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
 
 exclude:
   - subprojects
   - README.md
   - .gitignore
+  - Gemfile
+  - Gemfile.lock

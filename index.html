@@ -1,0 +1,125 @@
+---
+layout: default
+title: 首页
+---
+<section class="hero">
+  <div class="hero-glow"></div>
+  <p class="eyebrow">Storage · AI Inference · AI-Native OS · Linux</p>
+  <h1>把系统拆开,<span class="grad">看清楚它是怎么跑的。</span></h1>
+  <p class="lede">
+    记录存储、AI 推理、AI 原生操作系统与 Linux 内核的架构、时序和源码细节。
+    用可交互的原理图与逐函数调用链,代替大段黑盒结论。
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{{ '/posts/' | relative_url }}">阅读文章</a>
+    <a class="btn btn-ghost" href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">浏览内核图集</a>
+  </div>
+  <div class="stats">
+    <div><strong>{{ site.data.site.diagram_count }}</strong><span>交互原理图</span></div>
+    <div><strong>{{ site.data.site.subsystem_count }}</strong><span>内核子系统</span></div>
+    <div><strong>{{ site.data.site.deep_chain_count }}</strong><span>深度调用链</span></div>
+    <div><strong>{{ site.posts | size }}</strong><span>技术文章</span></div>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="section-head">
+    <h2>精选项目</h2>
+    <a href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">查看全部 →</a>
+  </div>
+  <div class="feature">
+    <div class="feature-copy">
+      <span class="pill">Archify · Linux v7.2-rc3</span>
+      <h3>Linux 内核原理图解</h3>
+      <p>
+        44 张可交互架构图、时序图与状态机,覆盖进程、内存、网络、文件系统、块层与 NVMe。
+        每张概览图附「完整调用链」卡片,另有 7 张函数级深度调用链,所有符号均标注源码 <code>path:line</code>。
+      </p>
+      <div class="chips">
+        <span>进程管理</span><span>内存管理</span><span>网络协议栈</span>
+        <span>文件系统</span><span>设备驱动</span><span>NVMe</span>
+      </div>
+      <a class="btn btn-primary" href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">打开交互图集</a>
+    </div>
+    <div class="feature-preview">
+      <div class="window-bar">
+        <span></span><span></span><span></span>
+        <em>kernel-subsystems.html</em>
+      </div>
+      <iframe
+        src="{{ '/linux-arch-dia/内核总览/kernel-subsystems.html' | relative_url }}"
+        loading="lazy"
+        title="Linux 内核子系统总览"></iframe>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="section-head">
+    <h2>专栏</h2>
+    <span class="muted">持续更新</span>
+  </div>
+  <div class="cat-grid">
+    {% for cat in site.data.categories %}
+      {% assign cat_posts = site.categories[cat.slug] | default: empty %}
+      <a class="cat-card" href="{{ '/posts/' | relative_url }}?cat={{ cat.slug }}" style="--accent: {{ cat.accent }}">
+        <span class="cat-icon">
+          {% case cat.slug %}
+          {% when 'storage' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="8" ry="3"></ellipse>
+              <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"></path>
+              <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"></path>
+            </svg>
+          {% when 'ai-inference' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+              <path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"></path>
+              <path d="M9.5 12h1.5M13 12h1.5"></path>
+            </svg>
+          {% when 'ai-native-os' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+              <path d="M3 9h18M9 21V9"></path>
+              <circle cx="15.5" cy="15" r="2.5"></circle>
+            </svg>
+          {% when 'linux' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <path d="m7 9 3 3-3 3M13 15h4"></path>
+            </svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="8"></circle>
+            </svg>
+          {% endcase %}
+        </span>
+        <h3>{{ cat.name }}</h3>
+        <p>{{ cat.desc }}</p>
+        <span class="cat-meta">{{ cat_posts | size }} 篇文章</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="section-head">
+    <h2>最新文章</h2>
+    <a href="{{ '/posts/' | relative_url }}">全部文章 →</a>
+  </div>
+  {% if site.posts.size > 0 %}
+  <ul class="post-list">
+    {% for post in site.posts limit: 5 %}
+    <li class="post-item">
+      <a href="{{ post.url | relative_url }}">
+        <time>{{ post.date | date: '%Y-%m-%d' }}</time>
+        <span class="post-title">{{ post.title }}</span>
+        <span class="post-excerpt">{{ post.excerpt | strip_html | normalize_whitespace | truncate: 110 }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">文章正在整理中,敬请期待。</p>
+  {% endif %}
+</section>
