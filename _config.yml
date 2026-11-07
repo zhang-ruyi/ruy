@@ -4,7 +4,8 @@ lang: zh-CN
 timezone: Asia/Shanghai
 
 url: "https://zhang-ruyi.github.io"
-baseurl: "/ruy.github.io"
+baseurl: "/ruy"
+permalink: /:year/:month/:day/:title.html
 
 markdown: kramdown
 kramdown:
