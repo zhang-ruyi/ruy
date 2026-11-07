@@ -19,24 +19,13 @@ description: 一次 fork 的逐函数深读:task_struct、COW、copy_thread 与�
   <figcaption>图 1:fork() 创建进程的深度调用链(可缩放、可导出)。</figcaption>
 </figure>
 
-```text
-SYSCALL_DEFINE0(fork)             — kernel/fork.c:2879
-└─ kernel_clone                   — kernel/fork.c:2744
-   ├─ copy_process                — kernel/fork.c:2029
-   │  ├─ dup_task_struct          — kernel/fork.c:916
-   │  ├─ sched_fork               — kernel/sched/core.c:4876
-   │  ├─ copy_files               — kernel/fork.c:1676
-   │  ├─ copy_fs                  — kernel/fork.c:1634
-   │  ├─ copy_sighand             — kernel/fork.c:1707
-   │  ├─ copy_signal              — kernel/fork.c:1756
-   │  ├─ copy_mm                  — kernel/fork.c:1575
-   │  ├─ copy_namespaces          — kernel/fork.c:2331 附近
-   │  ├─ copy_io                  — kernel/fork.c:2334 附近
-   │  ├─ copy_thread              — arch/x86/kernel/process.c:170
-   │  ├─ alloc_pid                — kernel/fork.c:2344 附近
-   │  └─ ...                      — 安全/审计/cgroup 等收尾
-   └─ wake_up_new_task            — kernel/sched/core.c:5014
-```
+<div class="tree-map" role="img" aria-label="SYSCALL_DEFINE0(fork) 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">SYSCALL_DEFINE0(fork) 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">SYSCALL_DEFINE0(fork)</span><span class="tree-sub">kernel/fork.c:2879</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">kernel_clone</span><span class="tree-sub">kernel/fork.c:2744</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">copy_process</span><span class="tree-sub">kernel/fork.c:2029</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">dup_task_struct</span><span class="tree-sub">kernel/fork.c:916</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">sched_fork</span><span class="tree-sub">kernel/sched/core.c:4876</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_files</span><span class="tree-sub">kernel/fork.c:1676</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_fs</span><span class="tree-sub">kernel/fork.c:1634</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_sighand</span><span class="tree-sub">kernel/fork.c:1707</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_signal</span><span class="tree-sub">kernel/fork.c:1756</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_mm</span><span class="tree-sub">kernel/fork.c:1575</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_namespaces</span><span class="tree-sub">kernel/fork.c:2331 附近</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_io</span><span class="tree-sub">kernel/fork.c:2334 附近</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">copy_thread</span><span class="tree-sub">arch/x86/kernel/process.c:170</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">alloc_pid</span><span class="tree-sub">kernel/fork.c:2344 附近</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">...</span><span class="tree-sub">安全/审计/cgroup 等收尾</span></div></li></ul></li><li><div class="tree-card tone-violet"><span class="tree-label">wake_up_new_task</span><span class="tree-sub">kernel/sched/core.c:5014</span></div></li></ul></li></ul></li></ul>
+</div>
 
 几个容易被忽略的事实:
 

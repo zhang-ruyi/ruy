@@ -130,15 +130,13 @@ kmem_cache_init()             — 初始化 slab 的根缓存
 
 `memblock_free_all`(`mm/memblock.c:2461`)先清理未使用的 memmap,再复位各 zone 的 `managed_pages`,最后调用 `free_low_memory_core_early`(`mm/memblock.c:2420`)。后者用 `for_each_free_mem_range` 遍历"memory 减去 reserved"的每一段,对每段调用 `__free_memory_core`(`mm/memblock.c:2329`),最终进入 `__free_pages_core`(`mm/page_alloc.c:1585`),把页按最大可用阶(order)挂进 buddy 的 `free_area`。
 
-```text
-memblock_free_all              — mm/memblock.c:2461
-└─ free_low_memory_core_early  — mm/memblock.c:2420
-   └─ __free_memory_core       — mm/memblock.c:2329
-      └─ __free_pages_memory   — mm/memblock.c:2303
-         └─ memblock_free_pages — mm/mm_init.c:2465
-            └─ __free_pages_core — mm/page_alloc.c:1585
-               └─ buddy 合并
-```
+<div class="tree-map" role="img" aria-label="memblock_free_all 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">memblock_free_all 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">memblock_free_all</span><span class="tree-sub">mm/memblock.c:2461</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">free_low_memory_core_early</span><span class="tree-sub">mm/memblock.c:2420</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">__free_memory_core</span><span class="tree-sub">mm/memblock.c:2329</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">__free_pages_memory</span><span class="tree-sub">mm/memblock.c:2303</span></div><ul><li><div class="tree-card tone-green"><span class="tree-label">memblock_free_pages</span><span class="tree-sub">mm/mm_init.c:2465</span></div><ul><li><div class="tree-card tone-teal"><span class="tree-label">__free_pages_core</span><span class="tree-sub">mm/page_alloc.c:1585</span></div><ul><li><div class="tree-card tone-rose"><span class="tree-label">buddy 合并</span></div></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul>
+</div>
 
 从这里开始,memblock 的"账本"逐步退场,内存分配的主角变成 buddy 与后续的 slab。
 
@@ -190,12 +188,13 @@ static __fastpath_inline void *slab_alloc_node(struct kmem_cache *s,
 
 `kmalloc` 并不神秘,它先根据大小选一个通用缓存,再走同样的 `slab_alloc_node`:
 
-```text
-__kmalloc_noprof             — mm/slub.c:5548
-└─ __do_kmalloc_node
-   └─ kmalloc_slab           — mm/slab.h:418
-      └─ slab_alloc_node     — mm/slub.c:5006
-```
+<div class="tree-map" role="img" aria-label="__kmalloc_noprof 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">__kmalloc_noprof 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">__kmalloc_noprof</span><span class="tree-sub">mm/slub.c:5548</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">__do_kmalloc_node</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">kmalloc_slab</span><span class="tree-sub">mm/slab.h:418</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">slab_alloc_node</span><span class="tree-sub">mm/slub.c:5006</span></div></li></ul></li></ul></li></ul></li></ul>
+</div>
 
 `kmalloc_slab` 维护 8、16、32……直到 `KMALLOC_MAX_CACHE_SIZE` 的尺寸类;超过这个阈值就退化为 `kmalloc_large`,直接向 buddy 要页。于是同一套 API 在"小对象"和"大块内存"之间自动切换,调用者不必关心。
 

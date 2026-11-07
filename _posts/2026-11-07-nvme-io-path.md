@@ -30,30 +30,23 @@ description: VFS → 块层 blk-mq → NVMe queue_rq → SQ 门铃 → MSI-X 完
   <figcaption>图 1:NVMe IO 的函数级调用链(提交、门铃、完成)。</figcaption>
 </figure>
 
-```text
-[提交路径 · 进程上下文]
-ksys_read                        — fs/read_write.c:705
-└─ vfs_read                      — fs/read_write.c:554
-   └─ submit_bio_noacct          — block/blk-core.c:818
-      └─ blk_mq_submit_bio       — block/blk-mq.c:3115
-         └─ nvme_queue_rq        — drivers/nvme/host/pci.c:1663
-            ├─ nvme_setup_cmd    — drivers/nvme/host/core.c:1107
-            ├─ nvme_map_data     — drivers/nvme/host/pci.c:1469
-            ├─ nvme_sq_copy_cmd  — drivers/nvme/host/pci.c:742
-            └─ nvme_write_sq_db  — drivers/nvme/host/pci.c:724
+<div class="tree-map" role="img" aria-label="提交路径 · 进程上下文">
+  <div class="tree-map-head">
+    <span class="tree-map-title">提交路径 · 进程上下文</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">ksys_read</span><span class="tree-sub">fs/read_write.c:705</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">vfs_read</span><span class="tree-sub">fs/read_write.c:554</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">submit_bio_noacct</span><span class="tree-sub">block/blk-core.c:818</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">blk_mq_submit_bio</span><span class="tree-sub">block/blk-mq.c:3115</span></div><ul><li><div class="tree-card tone-green"><span class="tree-label">nvme_queue_rq</span><span class="tree-sub">drivers/nvme/host/pci.c:1663</span></div><ul><li><div class="tree-card tone-teal"><span class="tree-label">nvme_setup_cmd</span><span class="tree-sub">drivers/nvme/host/core.c:1107</span></div></li><li><div class="tree-card tone-teal"><span class="tree-label">nvme_map_data</span><span class="tree-sub">drivers/nvme/host/pci.c:1469</span></div></li><li><div class="tree-card tone-teal"><span class="tree-label">nvme_sq_copy_cmd</span><span class="tree-sub">drivers/nvme/host/pci.c:742</span></div></li><li><div class="tree-card tone-teal"><span class="tree-label">nvme_write_sq_db</span><span class="tree-sub">drivers/nvme/host/pci.c:724</span></div></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul>
+</div>
 
-[设备执行 · NVMe 控制器]
-SQE DMA fetch → 执行命令 → CQE 写入 → MSI-X 中断
+<div class="callout"><strong>设备执行 · NVMe 控制器</strong>:SQE DMA fetch → 执行命令 → CQE 写入 → MSI-X 中断。</div>
 
-[完成路径 · 中断上下文]
-nvme_irq                         — drivers/nvme/host/pci.c:1862
-└─ nvme_poll_cq                  — drivers/nvme/host/pci.c:1841
-   └─ nvme_handle_cqe            — drivers/nvme/host/pci.c:1789
-      └─ nvme_pci_complete_rq    — drivers/nvme/host/pci.c:1754
-         └─ nvme_complete_rq    — drivers/nvme/host/core.c:513
-            └─ blk_mq_end_request — block/blk-mq.c:1165
-               └─ bio_endio       — block/bio.c:1863
-```
+<div class="tree-map" role="img" aria-label="完成路径 · 中断上下文">
+  <div class="tree-map-head">
+    <span class="tree-map-title">完成路径 · 中断上下文</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">nvme_irq</span><span class="tree-sub">drivers/nvme/host/pci.c:1862</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">nvme_poll_cq</span><span class="tree-sub">drivers/nvme/host/pci.c:1841</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">nvme_handle_cqe</span><span class="tree-sub">drivers/nvme/host/pci.c:1789</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">nvme_pci_complete_rq</span><span class="tree-sub">drivers/nvme/host/pci.c:1754</span></div><ul><li><div class="tree-card tone-green"><span class="tree-label">nvme_complete_rq</span><span class="tree-sub">drivers/nvme/host/core.c:513</span></div><ul><li><div class="tree-card tone-teal"><span class="tree-label">blk_mq_end_request</span><span class="tree-sub">block/blk-mq.c:1165</span></div><ul><li><div class="tree-card tone-rose"><span class="tree-label">bio_endio</span><span class="tree-sub">block/bio.c:1863</span></div></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul>
+</div>
 
 ## 三、VFS 与页缓存:先看命中不命中
 

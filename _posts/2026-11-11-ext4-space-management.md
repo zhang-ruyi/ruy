@@ -172,13 +172,13 @@ extent 的三类磁盘结构在 `fs/ext4/ext4_extents.h`:
 
 块分配的入口是 `ext4_mb_new_blocks`(`fs/ext4/mballoc.c:6228`)。它接收一个 `struct ext4_allocation_request`(`fs/ext4/ext4.h:210`),里面包含 inode、目标逻辑块、长度、goal 等信息。核心流程:
 
-```text
-ext4_mb_new_blocks                 — fs/ext4/mballoc.c:6228
-├─ ext4_mb_initialize_context      — fs/ext4/mballoc.c:5882
-├─ ext4_mb_use_preallocated        — fs/ext4/mballoc.c:4875
-└─ ext4_mb_regular_allocator       — fs/ext4/mballoc.c:3000
-   └─ ext4_mb_find_by_goal         — fs/ext4/mballoc.c:2428
-```
+<div class="tree-map" role="img" aria-label="ext4_mb_new_blocks 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">ext4_mb_new_blocks 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">ext4_mb_new_blocks</span><span class="tree-sub">fs/ext4/mballoc.c:6228</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">ext4_mb_initialize_context</span><span class="tree-sub">fs/ext4/mballoc.c:5882</span></div></li><li><div class="tree-card tone-blue"><span class="tree-label">ext4_mb_use_preallocated</span><span class="tree-sub">fs/ext4/mballoc.c:4875</span></div></li><li><div class="tree-card tone-blue"><span class="tree-label">ext4_mb_regular_allocator</span><span class="tree-sub">fs/ext4/mballoc.c:3000</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">ext4_mb_find_by_goal</span><span class="tree-sub">fs/ext4/mballoc.c:2428</span></div></li></ul></li></ul></li></ul>
+</div>
 
 `ext4_mb_initialize_context` 把请求转换成分配上下文 `struct ext4_allocation_context`(`fs/ext4/mballoc.h:173`),并设置 goal。`ext4_mb_use_preallocated` 先尝试复用预分配空间;失败才进入常规分配器。
 
@@ -324,13 +324,13 @@ jbd2_journal_flush              — fs/jbd2/journal.c:2415
 
 `fsync` 对应 `ext4_sync_file`(`fs/ext4/fsync.c:128`):
 
-```text
-ext4_sync_file                 — fs/ext4/fsync.c:128
-├─ file_write_and_wait_range
-├─ ext4_fsync_journal          — fs/ext4/fsync.c:96
-│  └─ 等待相关事务提交
-└─ blkdev_issue_flush          — fs/ext4/fsync.c:166
-```
+<div class="tree-map" role="img" aria-label="ext4_sync_file 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">ext4_sync_file 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">ext4_sync_file</span><span class="tree-sub">fs/ext4/fsync.c:128</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">file_write_and_wait_range</span></div></li><li><div class="tree-card tone-blue"><span class="tree-label">ext4_fsync_journal</span><span class="tree-sub">fs/ext4/fsync.c:96</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">等待相关事务提交</span></div></li></ul></li><li><div class="tree-card tone-blue"><span class="tree-label">blkdev_issue_flush</span><span class="tree-sub">fs/ext4/fsync.c:166</span></div></li></ul></li></ul>
+</div>
 
 如果有日志,元数据由日志保证,`ext4_fsync_journal` 等待对应事务提交;如果没有日志,`ext4_fsync_nojournal`(`fs/ext4/fsync.c:79`)直接回写并判断是否需要 flush。最后 `blkdev_issue_flush` 把设备写缓存刷到稳定介质。
 
@@ -366,12 +366,13 @@ void ext4_io_submit(struct ext4_io_submit *io)
 
 ### 4.2 块层:bio → request
 
-```text
-submit_bio                    — block/blk-core.c:960
-└─ submit_bio_noacct          — block/blk-core.c:818
-   └─ blk_mq_submit_bio       — block/blk-mq.c:3115
-      └─ 驱动 queue_rq        — NVMe/SCSI
-```
+<div class="tree-map" role="img" aria-label="submit_bio 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">submit_bio 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">submit_bio</span><span class="tree-sub">block/blk-core.c:960</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">submit_bio_noacct</span><span class="tree-sub">block/blk-core.c:818</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">blk_mq_submit_bio</span><span class="tree-sub">block/blk-mq.c:3115</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">驱动 queue_rq</span><span class="tree-sub">NVMe/SCSI</span></div></li></ul></li></ul></li></ul></li></ul>
+</div>
 
 `blk_mq_submit_bio` 负责分配 request、选择硬件队列(hctx)、做合并/plug、调用驱动的 `queue_rq`。对 NVMe,`queue_rq` 会把命令写进 SQ 并敲门铃;对 SCSI,则走 SCSI mid-layer 与 host adapter。ext4 不关心这些差异,它只负责把"逻辑块 → 物理块"的映射做对,并把 bio 交出去。
 

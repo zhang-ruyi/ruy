@@ -17,24 +17,13 @@ description: 缺页异常的分层入口、错误码、VMA 查找、页表遍历
   <figcaption>图 1:缺页异常的函数级调用链(分支可交互展开)。</figcaption>
 </figure>
 
-```text
-exc_page_fault                   — arch/x86/mm/fault.c:1492
-└─ handle_page_fault             — arch/x86/mm/fault.c:1471
-   └─ do_user_addr_fault         — arch/x86/mm/fault.c:1216(用户态分支)
-      ├─ lock_mm_and_find_vma    — mm/mmap_lock.c:623
-      └─ handle_mm_fault         — mm/memory.c:6949
-         └─ __handle_mm_fault    — mm/memory.c:6714
-            └─ handle_pte_fault  — mm/memory.c:6621
-               ├─ do_pte_missing — mm/memory.c:4773(PTE 为空)
-               │  ├─ do_anonymous_page — mm/memory.c:5539(匿名映射)
-               │  └─ do_fault          — mm/memory.c:6216(文件映射)
-               │     ├─ do_read_fault   — mm/memory.c:6092
-               │     ├─ do_cow_fault    — mm/memory.c:6124
-               │     └─ do_shared_fault — mm/memory.c:6166
-               ├─ do_swap_page   — mm/memory.c:4987(swap 项)
-               ├─ do_numa_page   — mm/memory.c:6395(NUMA 保护页)
-               └─ do_wp_page     — mm/memory.c:4458(写只读页/COW)
-```
+<div class="tree-map" role="img" aria-label="exc_page_fault 调用链">
+  <div class="tree-map-head">
+    <span class="tree-map-title">exc_page_fault 调用链</span>
+    <span class="tree-map-note">源码基线 v7.4.0-rc1</span>
+  </div>
+  <ul><li><div class="tree-card tone-slate"><span class="tree-label">exc_page_fault</span><span class="tree-sub">arch/x86/mm/fault.c:1492</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">handle_page_fault</span><span class="tree-sub">arch/x86/mm/fault.c:1471</span></div><ul><li><div class="tree-card tone-violet"><span class="tree-label">do_user_addr_fault</span><span class="tree-sub">arch/x86/mm/fault.c:1216(用户态分支)</span></div><ul><li><div class="tree-card tone-amber"><span class="tree-label">lock_mm_and_find_vma</span><span class="tree-sub">mm/mmap_lock.c:623</span></div></li><li><div class="tree-card tone-amber"><span class="tree-label">handle_mm_fault</span><span class="tree-sub">mm/memory.c:6949</span></div><ul><li><div class="tree-card tone-green"><span class="tree-label">__handle_mm_fault</span><span class="tree-sub">mm/memory.c:6714</span></div><ul><li><div class="tree-card tone-teal"><span class="tree-label">handle_pte_fault</span><span class="tree-sub">mm/memory.c:6621</span></div><ul><li><div class="tree-card tone-rose"><span class="tree-label">do_pte_missing</span><span class="tree-sub">mm/memory.c:4773(PTE 为空)</span></div><ul><li><div class="tree-card tone-slate"><span class="tree-label">do_anonymous_page</span><span class="tree-sub">mm/memory.c:5539(匿名映射)</span></div></li><li><div class="tree-card tone-slate"><span class="tree-label">do_fault</span><span class="tree-sub">mm/memory.c:6216(文件映射)</span></div><ul><li><div class="tree-card tone-blue"><span class="tree-label">do_read_fault</span><span class="tree-sub">mm/memory.c:6092</span></div></li><li><div class="tree-card tone-blue"><span class="tree-label">do_cow_fault</span><span class="tree-sub">mm/memory.c:6124</span></div></li><li><div class="tree-card tone-blue"><span class="tree-label">do_shared_fault</span><span class="tree-sub">mm/memory.c:6166</span></div></li></ul></li></ul></li><li><div class="tree-card tone-rose"><span class="tree-label">do_swap_page</span><span class="tree-sub">mm/memory.c:4987(swap 项)</span></div></li><li><div class="tree-card tone-rose"><span class="tree-label">do_numa_page</span><span class="tree-sub">mm/memory.c:6395(NUMA 保护页)</span></div></li><li><div class="tree-card tone-rose"><span class="tree-label">do_wp_page</span><span class="tree-sub">mm/memory.c:4458(写只读页/COW)</span></div></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul>
+</div>
 
 这四层分别是:
 
