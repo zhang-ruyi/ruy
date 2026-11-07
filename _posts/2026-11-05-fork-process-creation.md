@@ -9,9 +9,6 @@ description: 一次 fork 的逐函数深读:task_struct、COW、copy_thread 与�
 
 `fork()` 常被概括为"复制一个进程",但内核真正复制的是一组**受控的引用与状态**:地址空间用写时复制共享,文件表引用计数加一,信号处理与命名空间按需复制,最后为子进程伪造一份"从系统调用返回 0"的上下文。本文沿 v7.4.0-rc1 源码把这条路径拆到函数级,并给出数据结构、失败路径与观测方法。
 
-<div class="callout">
-本文结构:全景调用链 → task_struct 与复制顺序 → kernel_clone 校验 → copy_mm 与 COW → copy_thread 返回 0 → sched_fork / wake_up_new_task → 失败路径 → 观测与调试 → 常见误解。
-</div>
 
 ## 一、全景:从系统调用到运行队列
 

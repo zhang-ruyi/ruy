@@ -9,9 +9,6 @@ description: 开机期 memblock 记账与线性分配、memblock_free_all 交接
 
 内核里没有"一个内存分配器",只有一套**逐级升级的分配体系**:开机时连 `struct page` 都还没准备好,只能用 memblock 记账和线性分配;等页表、zone、vmemmap 就绪后,再把空闲物理页一次性交给 buddy;buddy 只适合整页,于是又长出 slab/slub 来管理小对象;文件缓存和匿名内存则以 page cache、folio 的形式存在,最后由回收器统一回收。本文沿 v7.4.0-rc1 源码,把这条从"物理内存账本"到"folio"的演化链拆开。
 
-<div class="callout">
-本文结构:为什么早期不能用 buddy → memblock 的 add/reserve/alloc → memblock_free_all 与 buddy 交接 → zone/PCP/迁移类型 → slab/slub → struct page 到 folio → anon folio/THP/filemap/readahead/writeback → 生命周期 → 观测 → 设计取舍。
-</div>
 
 ## 一、开机早期:为什么不能直接用 buddy
 

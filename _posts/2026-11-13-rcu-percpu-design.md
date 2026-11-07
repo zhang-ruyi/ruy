@@ -11,9 +11,6 @@ description: 从 grace period 到 this_cpu_inc:读多写少场景下,RCU、per-C
 
 本文不打算把 RCU 讲成一组 API 清单,而是从"为什么读侧可以这么快"出发,逐步展开 grace period、发布/订阅、per-CPU、顺序锁、引用计数和内存屏障,最后用 dcache、路由表、网络收包、进程遍历四个真实例子说明它们如何组合。
 
-<div class="callout">
-本文结构:成本模型 → RCU 读侧 → grace period 与写侧 → per-CPU → seqlock → refcount → 内存屏障 → 四个实例 → 权衡与 FAQ → 观测调试。
-</div>
 
 ## 一、先算一笔账:读多写少到底贵在哪
 

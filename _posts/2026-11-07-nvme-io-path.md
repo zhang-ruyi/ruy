@@ -9,9 +9,6 @@ description: VFS → 块层 blk-mq → NVMe queue_rq → SQ 门铃 → MSI-X 完
 
 一次 `read()` 看起来只是把数据从磁盘搬到用户缓冲区,实际要穿过 VFS、页缓存、块层、blk-mq、NVMe 驱动和 PCIe 设备。本文按时间顺序走一遍,重点看**谁在什么上下文里做了什么**,以及 NVMe 的队列、门铃、完成和错误恢复。
 
-<div class="callout">
-本文结构:三条 IO 路径 → 全景调用链 → VFS/页缓存 → blk-mq → NVMe 提交 → 门铃与设备 → 完成回收 → 队列限制 → io_uring 透传 → 错误恢复 → 观测。
-</div>
 
 ## 一、先分清三条路径
 

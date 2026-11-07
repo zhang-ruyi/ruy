@@ -9,9 +9,6 @@ description: 从线程模型、上下文切换与队列深度出发,对比 POSIX
 
 异步 IO 要解决的不是"读得快",而是"在等待设备的时候不浪费 CPU"。同一件事,Linux 上出现过三代截然不同的做法:glibc 用用户态线程池模拟,libaio 用内核的完成环,io_uring 则把提交环和完成环都放进用户态共享内存。理解三代设计的差异,比记住 API 名字重要得多。
 
-<div class="callout">
-本文结构:为什么需要异步 IO → 第一代 POSIX AIO(用户态线程池)→ 第二代 libaio 与 fs/aio.c → O_DIRECT 绑定与文件系统支持 → 第三代 io_uring 的 SQ/CQ 与 SQE/CQE → 批处理、SQPOLL、registered、IOPOLL、uring_cmd → 三代对比表 → 观测与调试 → FAQ 与选型。
-</div>
 
 ## 一、为什么需要异步 IO
 

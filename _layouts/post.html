@@ -1,11 +1,26 @@
 ---
 layout: default
 ---
-<article class="prose">
-  <h1>{{ page.title }}</h1>
-  <p class="meta">
-    {{ page.date | date: '%Y-%m-%d' }}
-    {% if page.categories %} · {{ page.categories | join: ' / ' }}{% endif %}
-  </p>
-  {{ content }}
-</article>
+<div class="reading-progress" aria-hidden="true"><span id="reading-progress-bar"></span></div>
+<div class="article-layout" id="top">
+  <article class="prose">
+    <h1>{{ page.title }}</h1>
+    <p class="meta">
+      {{ page.date | date: '%Y-%m-%d' }}
+      {% if page.categories %} · {{ page.categories | join: ' / ' }}{% endif %}
+    </p>
+    {{ content }}
+  </article>
+
+  <aside class="article-aside">
+    <nav class="article-toc" id="article-toc" aria-label="本文目录">
+      <div class="article-toc-head">
+        <span class="article-toc-title">本文目录</span>
+        <span class="article-toc-meta" id="article-toc-meta"></span>
+      </div>
+      <ol class="article-toc-list" id="article-toc-list"></ol>
+      <p class="article-toc-empty">本文暂无小节</p>
+      <a class="article-top" href="#top" id="article-top">回到顶部 ↑</a>
+    </nav>
+  </aside>
+</div>

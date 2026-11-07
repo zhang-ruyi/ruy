@@ -9,9 +9,6 @@ description: 从 superblock/块组/位图/extent 到 mballoc、延迟分配、JB
 
 ext4 的"空间管理"经常被拆成两个不相干的话题:文件系统侧讲位图、extent、延迟分配;块层侧讲 bio、request queue、NVMe/SCSI。但在内核里,这两件事是**同一条链路的两端**:ext4 先在逻辑块空间里挑中一块物理块,再把"逻辑块 → 物理块"的映射写进 inode 的 extent 树,最后把脏页转成 bio,交给块层变成 request 发给设备。本文沿 v7.4.0-rc1 源码,把这条链路从磁盘布局一直串到 discard/TRIM。
 
-<div class="callout">
-本文结构:磁盘布局 → 块位图与 mballoc → inode/extent/延迟分配/预分配 → JBD2 事务与三种日志模式 → fsync/barrier → bio/request queue/NVMe → discard/TRIM → 碎片/预留/orphan/resize → 观测工具 → 设计精妙。
-</div>
 
 ## 一、磁盘布局:先建立一张地图
 
@@ -47,22 +44,107 @@ superblock 位于偏移 1024 字节处(块大小为 1024 时位于块 1),这块�
 
 ### 1.3 一个块组的典型布局
 
-```text
-块组 0:
-[0, 1024)        引导扇区/保留
-[1024, ...)      superblock
-                 group descriptors
-                 reserved GDT blocks
-                 block bitmap        ← 1 块
-                 inode bitmap        ← 1 块
-                 inode table         ← 多块
-                 data blocks
-块组 N:
-                 (可能) superblock 副本
-                 (可能) GDT 副本
-                 block bitmap / inode bitmap / inode table
-                 data blocks
-```
+<div class="layout-map" role="img" aria-label="ext4 块组典型布局示意">
+  <div class="layout-map-head">
+    <span class="layout-map-title">一个块组的典型布局</span>
+    <span class="layout-map-note">示意,非按比例;实际布局以 dumpe2fs 为准</span>
+  </div>
+  <div class="layout-strip" aria-hidden="true">
+    <span class="layout-seg kind-boot" style="--w:1" title="引导扇区/保留">boot</span>
+    <span class="layout-seg kind-super" style="--w:2" title="superblock">super</span>
+    <span class="layout-seg kind-gdt" style="--w:4" title="group descriptors + reserved GDT">GDT</span>
+    <span class="layout-seg kind-bitmap" style="--w:1" title="block bitmap">bb</span>
+    <span class="layout-seg kind-bitmap" style="--w:1" title="inode bitmap">ib</span>
+    <span class="layout-seg kind-inode" style="--w:8" title="inode table">inode table</span>
+    <span class="layout-seg kind-data" style="--w:30" title="data blocks">data blocks</span>
+  </div>
+  <div class="layout-groups">
+    <div class="layout-group">
+      <div class="layout-group-name">块组 0</div>
+      <div class="layout-row">
+        <span class="layout-range">[0, 1024)</span>
+        <span class="layout-block kind-boot"><span class="name">引导扇区 / 保留</span></span>
+        <span class="layout-size">1 KiB</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">[1024, …)</span>
+        <span class="layout-block kind-super"><span class="name">superblock</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-gdt"><span class="name">group descriptors</span></span>
+        <span class="layout-size">多块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-reserved"><span class="name">reserved GDT blocks</span></span>
+        <span class="layout-size">保留</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-bitmap"><span class="name">block bitmap</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-bitmap"><span class="name">inode bitmap</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-inode"><span class="name">inode table</span></span>
+        <span class="layout-size">多块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">…</span>
+        <span class="layout-block kind-data"><span class="name">data blocks</span></span>
+        <span class="layout-size">剩余</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">块组 N</div>
+      <div class="layout-row">
+        <span class="layout-range">可能</span>
+        <span class="layout-block kind-super is-copy"><span class="name">superblock 副本</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">可能</span>
+        <span class="layout-block kind-gdt is-copy"><span class="name">GDT 副本</span></span>
+        <span class="layout-size">多块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">—</span>
+        <span class="layout-block kind-bitmap"><span class="name">block bitmap</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">—</span>
+        <span class="layout-block kind-bitmap"><span class="name">inode bitmap</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">—</span>
+        <span class="layout-block kind-inode"><span class="name">inode table</span></span>
+        <span class="layout-size">多块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">—</span>
+        <span class="layout-block kind-data"><span class="name">data blocks</span></span>
+        <span class="layout-size">剩余</span>
+      </div>
+    </div>
+  </div>
+  <div class="layout-legend">
+    <span><i class="kind-boot"></i>保留/引导</span>
+    <span><i class="kind-super"></i>superblock</span>
+    <span><i class="kind-gdt"></i>GDT</span>
+    <span><i class="kind-bitmap"></i>位图</span>
+    <span><i class="kind-inode"></i>inode 表</span>
+    <span><i class="kind-data"></i>数据块</span>
+  </div>
+</div>
 
 块位图每 bit 表示一个块(或一个 cluster)是否占用;inode 位图每 bit 表示一个 inode 是否占用;inode 表是定长 inode 的数组。`flex_bg` 会把多个组的这些元数据集中到一组开头,减少寻道。
 

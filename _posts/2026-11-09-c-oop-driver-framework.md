@@ -9,9 +9,6 @@ description: 用 struct + 函数指针 ops + container_of 复原 vtable、继承
 
 C 没有 `class`,也没有 `virtual`,更没有析构函数。但 Linux 驱动框架里处处是面向对象:文件有统一的操作接口,设备能挂到总线上,驱动能热插拔,资源能在卸载时自动释放。它靠的不是语法糖,而是四个朴素的机制:**结构体嵌入、函数指针表、`container_of`、引用计数与资源链表**。本文把这些机制拆开,看看内核如何用最少的语言特性拼出多态、继承和 RAII。
 
-<div class="callout">
-本文结构:C 的“对象”三件套 → ops 结构体作为接口 → container_of 与“继承” → device/driver/bus/class/kobject → bus_match 与 really_probe → devres 作为设备作用域 RAII → platform/PCI/设备树/ACPI 的统一接入 → module_init 与热插拔 → 与 C++/Rust 的对比 → 常见误解。
-</div>
 
 ## 一、C 的“对象”:结构体、函数指针与容器
 
