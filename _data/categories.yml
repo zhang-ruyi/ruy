@@ -14,3 +14,7 @@
   name: Linux 深度解读
   desc: 内核源码、子系统机制、并发模型与性能分析
   accent: "#f59e0b"
+- slug: kernel-deep
+  name: 内核精读
+  desc: 沿源码逐函数走读进程、内存、文件、网络、块层与 NVMe
+  accent: "#f97316"

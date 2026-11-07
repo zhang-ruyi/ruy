@@ -1,0 +1,96 @@
+---
+layout: default
+title: 内核精读
+description: 沿 Linux 内核源码逐函数走读,配可交互的深度调用链
+---
+<section class="page-head">
+  <h1>内核精读</h1>
+  <p>以源码为线索,逐函数走读 Linux 内核。每篇配一张可交互的深度调用链,所有函数与行号都对应真实源码。</p>
+</section>
+
+<section class="section reveal">
+  <div class="section-head">
+    <h2>章节大纲</h2>
+    <span class="muted">源码基线 v7.4.0-rc1</span>
+  </div>
+  <div class="cat-grid">
+    <a class="cat-card" href="{{ '/linux-arch-dia/进程管理/deep-process-create.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#f97316">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="2.5"></circle><path d="M12 8v5m0 0-4 6m4-6 4 6"/></svg></span>
+      <h3>进程管理</h3>
+      <p>fork 创建、调度、信号、退出回收与中断下半部。</p>
+      <span class="cat-meta">深度图:fork 创建进程 →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/linux-arch-dia/内存管理/deep-page-fault.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#4f8cff">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M4 12h16M12 4v16"/></svg></span>
+      <h3>内存管理</h3>
+      <p>缺页异常、伙伴系统、SLUB、mmap 与页回收。</p>
+      <span class="cat-meta">深度图:缺页异常 →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/linux-arch-dia/文件系统/deep-read.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#22c55e">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4M9 13h6M9 17h6"/></svg></span>
+      <h3>文件系统</h3>
+      <p>open 路径解析、page cache 读、脏页写回。</p>
+      <span class="cat-meta">深度图:read 到块层 →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/linux-arch-dia/网络协议栈/deep-tcp-recv.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#8b5cf6">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+      <h3>网络协议栈</h3>
+      <p>NAPI 收包、IP 层分发、TCP 状态机与 epoll。</p>
+      <span class="cat-meta">深度图:TCP 收包 →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/linux-arch-dia/设备驱动/deep-block-io.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#0ea5e9">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="2"></rect><path d="M7 12h.01M11 12h.01M15 12h.01"/></svg></span>
+      <h3>块层</h3>
+      <p>submit_bio、blk-mq 派发、驱动 queue_rq 与完成。</p>
+      <span class="cat-meta">深度图:块层 IO →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/linux-arch-dia/NVMe驱动/deep-nvme-io.html' | relative_url }}" target="_blank" rel="noopener" style="--accent:#ef4444">
+      <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M9 9h6v6H9zM4 9h-1M4 15h-1M21 9h-1M21 15h-1"/></svg></span>
+      <h3>NVMe</h3>
+      <p>SQ/CQ、门铃、MSI-X 完成与超时复位。</p>
+      <span class="cat-meta">深度图:NVMe IO →</span>
+    </a>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="section-head">
+    <h2>精读文章</h2>
+    <a href="{{ '/posts/' | relative_url }}?cat=kernel-deep">按专栏筛选 →</a>
+  </div>
+  {% assign deep_posts = site.categories['kernel-deep'] %}
+  {% if deep_posts and deep_posts.size > 0 %}
+  <ul class="post-list">
+    {% for post in deep_posts %}
+    <li class="post-item">
+      <a href="{{ post.url | relative_url }}">
+        <time>{{ post.date | date: '%Y-%m-%d' }}</time>
+        <span class="post-title">{{ post.title }}</span>
+        <span class="post-excerpt">{{ post.excerpt | strip_html | normalize_whitespace | truncate: 130 }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">文章正在整理中,敬请期待。</p>
+  {% endif %}
+</section>
+
+<section class="section reveal">
+  <div class="section-head"><h2>阅读约定</h2></div>
+  <ul class="post-list">
+    <li class="post-item"><a href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">
+      <time>基线</time><span class="post-title">源码基线 v7.4.0-rc1</span>
+      <span class="post-excerpt">函数名与行号以图集仓库为准;内核升级后行号会漂移,重新 finalize 会同步。</span>
+    </a></li>
+    <li class="post-item"><a href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">
+      <time>方法</time><span class="post-title">先看深度图,再回到源码</span>
+      <span class="post-excerpt">每篇文章的调用链与图集一一对应,可对照阅读。</span>
+    </a></li>
+  </ul>
+</section>
