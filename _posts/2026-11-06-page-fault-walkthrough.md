@@ -12,20 +12,26 @@ description: 缺页异常的分层入口、页表遍历与匿名页/文件页/CO
 ## 全景调用链
 
 ```text
-exc_page_fault             arch/x86/mm/fault.c:1492
-  handle_page_fault        arch/x86/mm/fault.c:1471
-    do_user_addr_fault     arch/x86/mm/fault.c:1216   (用户态分支)
-      lock_mm_and_find_vma mm/mmap_lock.c:623
-      handle_mm_fault      mm/memory.c:6949
-        __handle_mm_fault  mm/memory.c:6714
-          handle_pte_fault mm/memory.c:6621
-            do_pte_missing mm/memory.c:4561   (PTE 为空)
-              do_anonymous_page  mm/memory.c:5287
-              do_fault          mm/memory.c:5964
-            do_swap_page    mm/memory.c:4747
-            do_numa_page    mm/memory.c:6109
-            do_wp_page      mm/memory.c:4244
+exc_page_fault                                      — arch/x86/mm/fault.c:1492
+└─ handle_page_fault                                — arch/x86/mm/fault.c:1471
+   └─ do_user_addr_fault                            — arch/x86/mm/fault.c:1216
+      ├─ lock_mm_and_find_vma                       — mm/mmap_lock.c:623
+      └─ handle_mm_fault                            — mm/memory.c:6949
+         └─ __handle_mm_fault                       — mm/memory.c:6714
+            └─ handle_pte_fault                     — mm/memory.c:6621
+               ├─ do_pte_missing                    — mm/memory.c:4561
+               │  ├─ do_anonymous_page              — mm/memory.c:5287
+               │  └─ do_fault                       — mm/memory.c:5964
+               │     ├─ do_read_fault               — mm/memory.c:6092
+               │     ├─ do_cow_fault                — mm/memory.c:6124
+               │     ├─ do_shared_fault             — mm/memory.c:6166
+               │     └─ __do_fault → filemap_fault  — mm/filemap.c:3572
+               ├─ do_swap_page                      — mm/memory.c:4747
+               ├─ do_numa_page                      — mm/memory.c:6109
+               └─ do_wp_page                        — mm/memory.c:4244
 ```
+
+> 注:分支只列主路径;完整判断条件与出口见上方深度图。
 
 ## 三层入口
 

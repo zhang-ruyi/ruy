@@ -12,19 +12,21 @@ description: 一次 fork 的逐函数走读,以及 COW、copy_thread 与子进�
 ## 全景调用链
 
 ```text
-SYSCALL_DEFINE0(fork)      kernel/fork.c:2879
-  kernel_clone             kernel/fork.c:2744
-    copy_process           kernel/fork.c:2029
-      dup_task_struct      kernel/fork.c:916
-      sched_fork           kernel/sched/core.c:4876
-      copy_files           kernel/fork.c:1676
-      copy_fs              kernel/fork.c:1634
-      copy_sighand         kernel/fork.c:1707
-      copy_signal          kernel/fork.c:1756
-      copy_mm              kernel/fork.c:1575
-      copy_thread          arch/x86/kernel/process.c:170
-    wake_up_new_task       kernel/sched/core.c:5014
+SYSCALL_DEFINE0(fork)     — kernel/fork.c:2879
+└─ kernel_clone           — kernel/fork.c:2744
+   ├─ copy_process        — kernel/fork.c:2029
+   │  ├─ dup_task_struct  — kernel/fork.c:916
+   │  ├─ sched_fork       — kernel/sched/core.c:4876
+   │  ├─ copy_files       — kernel/fork.c:1676
+   │  ├─ copy_fs          — kernel/fork.c:1634
+   │  ├─ copy_sighand     — kernel/fork.c:1707
+   │  ├─ copy_signal      — kernel/fork.c:1756
+   │  ├─ copy_mm          — kernel/fork.c:1575
+   │  └─ copy_thread      — arch/x86/kernel/process.c:170
+   └─ wake_up_new_task    — kernel/sched/core.c:5014
 ```
+
+> 注:省略了 `copy_namespaces`、`copy_io` 等按 `CLONE_*` 标志决定的可选复制项。
 
 注意顺序:`sched_fork` 在多数资源复制之前调用,它负责把新任务放入调度器的初始状态;真正让子进程可运行的是最后的 `wake_up_new_task`。
 

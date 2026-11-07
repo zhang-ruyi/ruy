@@ -12,23 +12,30 @@ description: VFS → 块层 blk-mq → NVMe queue_rq → SQ 门铃 → MSI-X 完
 ## 全景调用链
 
 ```text
-ksys_read                fs/read_write.c:705
-  vfs_read               fs/read_write.c:554
-    submit_bio_noacct    block/blk-core.c:818
-      blk_mq_submit_bio  block/blk-mq.c:3115
-        nvme_queue_rq    drivers/nvme/host/pci.c:1663
-          nvme_setup_cmd drivers/nvme/host/core.c:1107
-          nvme_sq_copy_cmd drivers/nvme/host/pci.c:742
-          nvme_write_sq_db drivers/nvme/host/pci.c:724
-设备执行 → MSI-X
-  nvme_irq               drivers/nvme/host/pci.c:1862
-    nvme_poll_cq         drivers/nvme/host/pci.c:1841
-      nvme_handle_cqe    drivers/nvme/host/pci.c:1789
-        nvme_pci_complete_rq drivers/nvme/host/pci.c:1754
-          nvme_complete_rq   drivers/nvme/host/core.c:513
-            blk_mq_end_request block/blk-mq.c:1165
-              bio_endio        block/bio.c:1863
+[提交路径 · 进程上下文]
+ksys_read                        — fs/read_write.c:705
+└─ vfs_read                      — fs/read_write.c:554
+   └─ submit_bio_noacct          — block/blk-core.c:818
+      └─ blk_mq_submit_bio       — block/blk-mq.c:3115
+         └─ nvme_queue_rq        — drivers/nvme/host/pci.c:1663
+            ├─ nvme_setup_cmd    — drivers/nvme/host/core.c:1107
+            ├─ nvme_sq_copy_cmd  — drivers/nvme/host/pci.c:742
+            └─ nvme_write_sq_db  — drivers/nvme/host/pci.c:724
+
+[设备执行 · NVMe 控制器]
+SQE DMA fetch → 执行命令 → CQE 写入 → MSI-X 中断
+
+[完成路径 · 中断上下文]
+nvme_irq                           — drivers/nvme/host/pci.c:1862
+└─ nvme_poll_cq                    — drivers/nvme/host/pci.c:1841
+   └─ nvme_handle_cqe              — drivers/nvme/host/pci.c:1789
+      └─ nvme_pci_complete_rq      — drivers/nvme/host/pci.c:1754
+         └─ nvme_complete_rq       — drivers/nvme/host/core.c:513
+            └─ blk_mq_end_request  — block/blk-mq.c:1165
+               └─ bio_endio        — block/bio.c:1863
 ```
+
+> 注:提交路径省略了 page cache / ext4 等中间层(见《read 到块层》一文);这里聚焦进入 NVMe 驱动后的主干。
 
 ## 第一阶段:VFS 与页缓存
 
