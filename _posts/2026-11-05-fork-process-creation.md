@@ -48,17 +48,30 @@ SYSCALL_DEFINE0(fork)             — kernel/fork.c:2879
 
 `fork` 的第一件事不是复制内存,而是复制进程控制块 `task_struct`。它把进程的地址空间、文件、信号、命名空间、调度状态、寄存器上下文都挂在这个结构上:
 
-```text
-task_struct
-├── mm / active_mm   → 地址空间(dup_mm:复制页表,物理页 COW 共享)
-├── files            → 打开文件表(copy_files:引用计数 +1)
-├── fs               → 根目录 / 当前工作目录(copy_fs)
-├── sighand          → 信号处理函数表(copy_sighand)
-├── signal           → 信号队列 / 定时器 / 进程组状态(copy_signal)
-├── nsproxy          → 命名空间(copy_namespaces)
-├── io_context       → IO 上下文(copy_io)
-└── thread           → 寄存器上下文 / 内核栈(copy_thread)
-```
+<div class="tree-map" role="img" aria-label="task_struct 资源树">
+  <div class="tree-map-head">
+    <span class="tree-map-title">task_struct 资源树</span>
+    <span class="tree-map-note">括号内为复制函数</span>
+  </div>
+  <ul>
+    <li>
+      <div class="tree-card tone-slate">
+        <span class="tree-label">task_struct</span>
+        <span class="tree-sub">进程控制块</span>
+      </div>
+      <ul>
+        <li><div class="tree-card tone-green"><span class="tree-label">mm / active_mm</span><span class="tree-sub">地址空间 · dup_mm(COW)</span></div></li>
+        <li><div class="tree-card tone-blue"><span class="tree-label">files</span><span class="tree-sub">打开文件表 · copy_files(引用计数 +1)</span></div></li>
+        <li><div class="tree-card tone-violet"><span class="tree-label">fs</span><span class="tree-sub">根目录 / cwd · copy_fs</span></div></li>
+        <li><div class="tree-card tone-amber"><span class="tree-label">sighand</span><span class="tree-sub">信号处理函数表 · copy_sighand</span></div></li>
+        <li><div class="tree-card tone-rose"><span class="tree-label">signal</span><span class="tree-sub">信号队列 / 定时器 · copy_signal</span></div></li>
+        <li><div class="tree-card tone-teal"><span class="tree-label">nsproxy</span><span class="tree-sub">命名空间 · copy_namespaces</span></div></li>
+        <li><div class="tree-card tone-slate"><span class="tree-label">io_context</span><span class="tree-sub">IO 上下文 · copy_io</span></div></li>
+        <li><div class="tree-card tone-blue"><span class="tree-label">thread</span><span class="tree-sub">寄存器 / 内核栈 · copy_thread</span></div></li>
+      </ul>
+    </li>
+  </ul>
+</div>
 
 `dup_task_struct` 负责"骨架":
 

@@ -1,0 +1,75 @@
+/* ===== Tree map (hierarchies / containment / decisions) ===== */
+.tree-map {
+  margin: 1.8em 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.tree-map-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.tree-map-title { font-weight: 700; font-size: 14px; }
+.tree-map-note { color: var(--muted); font-size: 11.5px; }
+.tree-map ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 22px;
+  border-left: 1px solid var(--border-strong);
+}
+.tree-map > ul {
+  padding-left: 0;
+  border-left: 0;
+}
+.tree-map li {
+  position: relative;
+  margin: 6px 0;
+}
+.tree-map li::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 18px;
+  width: 18px;
+  border-top: 1px solid var(--border-strong);
+}
+.tree-map > ul > li::before { display: none; }
+.tree-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--kind, #64748b);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 12.5px;
+}
+.tree-card .tree-label {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.tree-card .tree-sub {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.tree-card:hover { border-color: var(--kind, var(--border-strong)); }
+.tone-blue { --kind: #3b82f6; }
+.tone-violet { --kind: #8b5cf6; }
+.tone-amber { --kind: #f59e0b; }
+.tone-green { --kind: #22c55e; }
+.tone-slate { --kind: #64748b; }
+.tone-rose { --kind: #ef4444; }
+.tone-teal { --kind: #14b8a6; }
+@media (max-width: 680px) {
+  .tree-map { padding: 12px; }
+  .tree-map ul { padding-left: 18px; }
+  .tree-map li::before { left: -18px; width: 14px; }
+  .tree-card { font-size: 12px; }
+}

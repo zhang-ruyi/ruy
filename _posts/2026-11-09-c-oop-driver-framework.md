@@ -130,18 +130,27 @@ struct platform_device {
 
 `platform_device` 内嵌了一个 `struct device dev`。总线、驱动核心、sysfs 都只认识 `struct device *`;平台驱动拿到这个指针后,用 `container_of` 还原出 `platform_device`,再访问 `resource`、`id` 等平台特有字段。`to_platform_driver`(`include/linux/platform_device.h:297`)同理,把 `struct device_driver *` 还原成 `struct platform_driver *`。
 
-```text
-struct platform_device
-┌──────────────────────────────┐
-│ name / id / resource ...     │
-│ struct device dev;  ◄────────┼── 总线只持有 &pdev->dev
-│   kobject kobj;              │
-│   bus / driver / ...         │
-└──────────────────────────────┘
-        ▲
-        │ container_of(dev, struct platform_device, dev)
-        │ = dev 地址 - offsetof(platform_device, dev)
-```
+<div class="tree-map" role="img" aria-label="platform_device 的布局级包含关系">
+  <div class="tree-map-head">
+    <span class="tree-map-title">platform_device 的“继承”:布局级包含</span>
+    <span class="tree-map-note">总线只持有 &amp;pdev-&gt;dev</span>
+  </div>
+  <ul>
+    <li>
+      <div class="tree-card tone-blue"><span class="tree-label">struct platform_device</span></div>
+      <ul>
+        <li><div class="tree-card tone-slate"><span class="tree-label">name / id / resource …</span></div></li>
+        <li>
+          <div class="tree-card tone-violet"><span class="tree-label">struct device dev</span><span class="tree-sub">内嵌的“基类”</span></div>
+          <ul>
+            <li><div class="tree-card tone-amber"><span class="tree-label">struct kobject kobj</span></div></li>
+            <li><div class="tree-card tone-green"><span class="tree-label">bus / driver / …</span></div></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
 
 所以内核里的“继承”不是语言级别的 is-a,而是**布局级别的 has-a + 偏移还原**。它带来两个后果:
 

@@ -32,13 +32,35 @@ POSIX 定义了一组 `aio_read`、`aio_write`、`aio_fsync`、`aio_suspend`、`
 
 因此第一代方案的本质是:
 
-```text
-应用线程
-  └─ aio_read(aiocb)
-       └─ glibc 请求队列
-            └─ 工作线程池(userspace threads)
-                 └─ 普通 read()/write()  ← 仍然可能阻塞
-```
+<div class="tree-map" role="img" aria-label="POSIX AIO 的 glibc 用户态线程池实现">
+  <div class="tree-map-head">
+    <span class="tree-map-title">POSIX AIO(glibc 用户态实现)</span>
+    <span class="tree-map-note">不是内核 AIO</span>
+  </div>
+  <ul>
+    <li>
+      <div class="tree-card tone-blue"><span class="tree-label">应用线程</span></div>
+      <ul>
+        <li>
+          <div class="tree-card tone-violet"><span class="tree-label">aio_read(aiocb)</span></div>
+          <ul>
+            <li>
+              <div class="tree-card tone-amber"><span class="tree-label">glibc 请求队列</span></div>
+              <ul>
+                <li>
+                  <div class="tree-card tone-slate"><span class="tree-label">工作线程池</span><span class="tree-sub">userspace threads</span></div>
+                  <ul>
+                    <li><div class="tree-card tone-rose"><span class="tree-label">普通 read()/write()</span><span class="tree-sub">仍然可能阻塞</span></div></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
 
 它有几个直接后果:
 
