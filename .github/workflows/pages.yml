@@ -21,16 +21,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       # 取消注释即可在每次构建时自动使用子项目远端 main 的最新提交
       # - run: git submodule update --remote --merge subprojects/linux-arch-dia
 
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # enablement 需要非 GITHUB_TOKEN 的 PAT,故不启用;
+      # 请先在 Settings → Pages → Source 选择 GitHub Actions。
+      - uses: actions/configure-pages@v6
 
       - uses: actions/jekyll-build-pages@v1
         with:
@@ -42,7 +42,7 @@ jobs:
           mkdir -p _site/linux-arch-dia
           rsync -a --delete subprojects/linux-arch-dia/site/ _site/linux-arch-dia/
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: ./_site
 
@@ -54,4 +54,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
