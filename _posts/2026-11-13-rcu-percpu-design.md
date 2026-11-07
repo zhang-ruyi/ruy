@@ -467,29 +467,12 @@ sudo modprobe rcutorture
 
 最后用一张"选择流程图"收束:
 
-<div class="tree-map" role="img" aria-label="并发原语选择决策树">
-  <div class="tree-map-head">
-    <span class="tree-map-title">并发原语选择</span>
-    <span class="tree-map-note">按访问模式选择</span>
-  </div>
-  <ul>
-    <li>
-      <div class="tree-card tone-slate"><span class="tree-label">读多写少?</span></div>
-      <ul>
-        <li>
-          <div class="tree-card tone-blue"><span class="tree-label">替换指针 / 发布新版本</span><span class="tree-sub">→ RCU</span></div>
-          <ul>
-            <li><div class="tree-card tone-green"><span class="tree-label">需要强引用防释放</span><span class="tree-sub">→ RCU + refcount</span></div></li>
-            <li><div class="tree-card tone-amber"><span class="tree-label">需要异步回收</span><span class="tree-sub">→ call_rcu / kfree_rcu</span></div></li>
-          </ul>
-        </li>
-        <li><div class="tree-card tone-violet"><span class="tree-label">需要一致的多字段快照</span><span class="tree-sub">→ seqlock</span></div></li>
-        <li><div class="tree-card tone-teal"><span class="tree-label">只是统计计数</span><span class="tree-sub">→ per-CPU + 汇总</span></div></li>
-        <li><div class="tree-card tone-rose"><span class="tree-label">读写都频繁 / 临界区长</span><span class="tree-sub">→ 自旋锁 / mutex</span></div></li>
-      </ul>
-    </li>
-  </ul>
-</div>
+<figure class="diagram">
+  <iframe src="{{ '/linux-arch-dia/并发与同步/concurrency-primitives.html' | relative_url }}" loading="lazy" title="并发原语选择决策流程"></iframe>
+  <figcaption>图 2:按访问模式选择并发原语(可交互)。</figcaption>
+</figure>
+
+一句话:读多写少优先 RCU;需要一致快照用 seqlock;计数用 per-CPU;临界区长再用锁。
 
 RCU 的精妙不在于它"快",而在于它**把读侧从并发控制中解放出来**,把复杂性集中到写侧和回收策略。per-CPU 则是同一思想的另一面:不去共享,就不会有竞争。seqlock 和 refcount 分别补上"一致快照"和"生命周期"两块拼图。理解它们的边界,比记住 API 更重要。
 
