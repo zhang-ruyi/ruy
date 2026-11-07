@@ -33,6 +33,60 @@ memblock 的核心结构在 `include/linux/memblock.h`:
 2. **reserve**:把内核镜像、initrd、页表、设备保留区等从可用内存里划掉,登记进 `memblock.reserved`
 3. **alloc**:在 `memory - reserved` 的空隙里做对齐的线性分配
 
+<div class="layout-map" role="img" aria-label="开机期物理内存账本示意">
+  <div class="layout-map-head">
+    <span class="layout-map-title">开机期的物理内存账本</span>
+    <span class="layout-map-note">示意;实际区间由固件/设备树报告</span>
+  </div>
+  <div class="layout-groups">
+    <div class="layout-group">
+      <div class="layout-group-name">memblock.memory(可用)</div>
+      <div class="layout-row">
+        <span class="layout-range">低端</span>
+        <span class="layout-block tone-green"><span class="name">可用 RAM 区间 A</span></span>
+        <span class="layout-size">usable</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">空洞</span>
+        <span class="layout-block tone-slate"><span class="name">MMIO / 固件保留空洞</span></span>
+        <span class="layout-size">hole</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">高端</span>
+        <span class="layout-block tone-green"><span class="name">可用 RAM 区间 B</span></span>
+        <span class="layout-size">usable</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">memblock.reserved(已占用)</div>
+      <div class="layout-row">
+        <span class="layout-range">镜像</span>
+        <span class="layout-block tone-rose"><span class="name">kernel image</span></span>
+        <span class="layout-size">reserved</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">启动</span>
+        <span class="layout-block tone-amber"><span class="name">initrd / DTB / 页表</span></span>
+        <span class="layout-size">reserved</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">设备</span>
+        <span class="layout-block tone-violet"><span class="name">设备保留区</span></span>
+        <span class="layout-size">reserved</span>
+      </div>
+    </div>
+  </div>
+  <div class="layout-legend">
+    <span><i class="tone-green"></i>可用 memory</span>
+    <span><i class="tone-slate"></i>空洞</span>
+    <span><i class="tone-rose"></i>内核镜像</span>
+    <span><i class="tone-amber"></i>启动期保留</span>
+    <span><i class="tone-violet"></i>设备保留</span>
+  </div>
+</div>
+
+`memblock_alloc` 只在 `memory - reserved` 的空隙里分配,这也是它必须做区间合并与重叠检查的原因。
+
 `memblock_add`(`mm/memblock.c:769`)和 `memblock_add_node`(`mm/memblock.c:747`)最终都进入 `memblock_add_range`(`mm/memblock.c:628`)。这个函数会做区间合并与重叠检查,保证 `memory` 里的区间尽量连续、无重复。`memblock_reserve` 是一个内联包装(`include/linux/memblock.h:135`),落到 `__memblock_reserve`(`mm/memblock.c:1024`),再调用同一个 `memblock_add_range`,只是目标换成 `memblock.reserved`。
 
 分配侧的关键函数是 `memblock_alloc_range_nid`(`mm/memblock.c:1576`):它遍历 `memblock.memory`,跳过 `memblock.reserved` 覆盖的部分,在给定地址范围内找满足对齐要求的空洞。`memblock_alloc_try_nid`(`mm/memblock.c:1835`)和常用的内联 `memblock_alloc`(`include/linux/memblock.h:423`)都是它的包装。

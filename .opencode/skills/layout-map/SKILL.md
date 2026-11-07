@@ -74,8 +74,9 @@ Archify 没有"地址区间 / 块布局"类型,纯 ASCII 也不好看。本 skil
 | `kind-inode` | inode 表 |
 | `kind-data` | 数据区 |
 | `is-copy` | 副本/可能存在的区域(虚线) |
+| `tone-blue` / `tone-violet` / `tone-amber` / `tone-green` / `tone-slate` / `tone-rose` / `tone-teal` | 非磁盘语义的通用色块(队列、寄存器、内存区等) |
 
-可在 CSS 变量 `--kind` 上覆盖颜色;条带用 `style="--w:N"` 控制相对宽度。
+可在 CSS 变量 `--kind` 上覆盖颜色;条带用 `style="--w:N"` 控制相对宽度。三列布局给 `.layout-groups` 加 `three` 类。
 
 ## 写作规范
 

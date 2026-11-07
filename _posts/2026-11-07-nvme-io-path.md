@@ -148,17 +148,59 @@ static inline void nvme_write_sq_db(struct nvme_queue *nvmeq, bool write_sq)
 
 ## 六、队列对与门铃:硬件视角
 
-```text
-主机内存                                 BAR (MMIO)
-┌──────────────────┐                    ┌────────────────────┐
-│ SQ: 64B SQE ...  │  sq_tail  ───────> │ SQ tail doorbell    │
-├──────────────────┤                    └────────────────────┘
-│ CQ: 16B CQE ...  │  cq_head  <──────  ┌────────────────────┐
-└──────────────────┘                    │ CQ head doorbell    │
-        ↑ DMA                           └────────────────────┘
-        │
-        └──── NVMe 控制器:DMA 取 SQE → 执行 → 写 CQE → MSI-X
-```
+<div class="layout-map" role="img" aria-label="NVMe 队列对与门铃布局示意">
+  <div class="layout-map-head">
+    <span class="layout-map-title">队列对与门铃:内存/寄存器视角</span>
+    <span class="layout-map-note">示意,非按字节比例</span>
+  </div>
+  <div class="layout-groups">
+    <div class="layout-group">
+      <div class="layout-group-name">主机内存(DMA 可访问)</div>
+      <div class="layout-row">
+        <span class="layout-range">SQ</span>
+        <span class="layout-block tone-blue"><span class="name">提交队列:64B SQE 数组 + head/tail</span></span>
+        <span class="layout-size">q_depth</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">CQ</span>
+        <span class="layout-block tone-violet"><span class="name">完成队列:16B CQE 数组 + phase</span></span>
+        <span class="layout-size">q_depth</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">数据</span>
+        <span class="layout-block tone-green"><span class="name">PRP/SGL:bio 物理段</span></span>
+        <span class="layout-size">DMA</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">BAR0(MMIO 寄存器)</div>
+      <div class="layout-row">
+        <span class="layout-range">SQ tail</span>
+        <span class="layout-block tone-amber"><span class="name">SQ tail doorbell</span></span>
+        <span class="layout-size">writel</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">CQ head</span>
+        <span class="layout-block tone-rose"><span class="name">CQ head doorbell</span></span>
+        <span class="layout-size">writel</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">CAP/CC</span>
+        <span class="layout-block tone-slate"><span class="name">能力/配置寄存器</span></span>
+        <span class="layout-size">MMIO</span>
+      </div>
+    </div>
+  </div>
+  <div class="layout-legend">
+    <span><i class="tone-blue"></i>SQ</span>
+    <span><i class="tone-violet"></i>CQ</span>
+    <span><i class="tone-green"></i>数据缓冲区</span>
+    <span><i class="tone-amber"></i>SQ 门铃</span>
+    <span><i class="tone-rose"></i>CQ 门铃</span>
+  </div>
+</div>
+
+控制器通过 DMA 读取 SQE、写回 CQE,完成后用 MSI-X 通知驱动。
 
 - **SQ/CQ**:提交队列与完成队列都在主机内存,控制器通过 DMA 访问
 - **doorbell**:驱动写 BAR 通知控制器"有新命令"或"已回收完成项"

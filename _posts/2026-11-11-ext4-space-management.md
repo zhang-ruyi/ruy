@@ -228,6 +228,70 @@ extent 路径会先用 `ext4_find_extent` 找到叶子,然后调用 `ext4_ext_in
 
 ext4 的元数据变更通过 JBD2(journaling block device 2)提交。日志本身是一个隐藏文件,通常 inode 号为 8;`struct journal_s`(`include/linux/jbd2.h:764`)描述整个日志,`struct transaction_s`(`:571`)描述一个事务。
 
+<div class="layout-map" role="img" aria-label="JBD2 日志文件布局示意">
+  <div class="layout-map-head">
+    <span class="layout-map-title">JBD2 日志文件(隐藏 inode 8)</span>
+    <span class="layout-map-note">按事务循环复用;示意,非按字节比例</span>
+  </div>
+  <div class="layout-groups">
+    <div class="layout-group">
+      <div class="layout-group-name">日志块序列</div>
+      <div class="layout-row">
+        <span class="layout-range">固定</span>
+        <span class="layout-block tone-blue"><span class="name">journal superblock</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">事务头</span>
+        <span class="layout-block tone-violet"><span class="name">descriptor block</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">数据</span>
+        <span class="layout-block tone-amber"><span class="name">metadata / data blocks</span></span>
+        <span class="layout-size">N 块</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">事务尾</span>
+        <span class="layout-block tone-rose"><span class="name">commit block</span></span>
+        <span class="layout-size">1 块</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">事务与 checkpoint</div>
+      <div class="layout-row">
+        <span class="layout-range">1</span>
+        <span class="layout-block tone-blue"><span class="name">start:获取 handle 与 credit</span></span>
+        <span class="layout-size">预留</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">2</span>
+        <span class="layout-block tone-violet"><span class="name">dirty metadata:纳入事务</span></span>
+        <span class="layout-size">修改</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">3</span>
+        <span class="layout-block tone-rose"><span class="name">commit:写 descriptor/data/commit</span></span>
+        <span class="layout-size">落盘</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">4</span>
+        <span class="layout-block tone-green"><span class="name">checkpoint:允许复用日志块</span></span>
+        <span class="layout-size">释放</span>
+      </div>
+    </div>
+  </div>
+  <div class="layout-legend">
+    <span><i class="tone-blue"></i>journal superblock</span>
+    <span><i class="tone-violet"></i>descriptor</span>
+    <span><i class="tone-amber"></i>data</span>
+    <span><i class="tone-rose"></i>commit</span>
+    <span><i class="tone-green"></i>checkpoint</span>
+  </div>
+</div>
+
+日志是一个环形缓冲区:commit 之后,旧事务要等 checkpoint 才能被覆盖。
+
 ### 3.1 一次事务的生命周期
 
 ```text

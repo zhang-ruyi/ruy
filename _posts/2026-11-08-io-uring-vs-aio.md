@@ -202,6 +202,76 @@ WRITE_ONCE(rings->cq_ring_mask, ctx->cq_entries - 1);
 
 定义见 `include/uapi/linux/io_uring.h:552-554`。这一步之后,提交和收割都可以是纯用户态内存操作。
 
+<div class="layout-map" role="img" aria-label="io_uring 共享区域布局示意">
+  <div class="layout-map-head">
+    <span class="layout-map-title">io_uring 的共享区域</span>
+    <span class="layout-map-note">按 IORING_OFF_* 映射;示意,非按字节比例</span>
+  </div>
+  <div class="layout-groups three">
+    <div class="layout-group">
+      <div class="layout-group-name">SQ ring(offset 0)</div>
+      <div class="layout-row">
+        <span class="layout-range">head/tail</span>
+        <span class="layout-block tone-blue"><span class="name">生产者/消费者位置</span></span>
+        <span class="layout-size">u32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">mask/entries</span>
+        <span class="layout-block tone-blue"><span class="name">环大小与位掩码</span></span>
+        <span class="layout-size">u32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">array[]</span>
+        <span class="layout-block tone-slate"><span class="name">SQE 索引数组</span></span>
+        <span class="layout-size">u32[]</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">CQ ring(0x8000000)</div>
+      <div class="layout-row">
+        <span class="layout-range">head/tail</span>
+        <span class="layout-block tone-violet"><span class="name">完成位置</span></span>
+        <span class="layout-size">u32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">mask/entries</span>
+        <span class="layout-block tone-violet"><span class="name">环大小与位掩码</span></span>
+        <span class="layout-size">u32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">cqes[]</span>
+        <span class="layout-block tone-amber"><span class="name">CQE 数组</span></span>
+        <span class="layout-size">16B[]</span>
+      </div>
+    </div>
+    <div class="layout-group">
+      <div class="layout-group-name">SQE 数组(0x10000000)</div>
+      <div class="layout-row">
+        <span class="layout-range">opcode/fd</span>
+        <span class="layout-block tone-green"><span class="name">操作码与目标</span></span>
+        <span class="layout-size">u8/s32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">off/addr/len</span>
+        <span class="layout-block tone-green"><span class="name">偏移、缓冲区与长度</span></span>
+        <span class="layout-size">u64/u32</span>
+      </div>
+      <div class="layout-row">
+        <span class="layout-range">user_data</span>
+        <span class="layout-block tone-teal"><span class="name">原样回传到 CQE</span></span>
+        <span class="layout-size">u64</span>
+      </div>
+    </div>
+  </div>
+  <div class="layout-legend">
+    <span><i class="tone-blue"></i>SQ ring</span>
+    <span><i class="tone-violet"></i>CQ ring</span>
+    <span><i class="tone-amber"></i>CQE</span>
+    <span><i class="tone-green"></i>SQE 字段</span>
+    <span><i class="tone-slate"></i>索引数组</span>
+  </div>
+</div>
+
 ### 4.3 enter:提交、等待、批处理
 
 `io_uring_enter`(`io_uring/io_uring.c:2852`)的签名是:
