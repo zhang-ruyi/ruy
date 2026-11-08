@@ -36,6 +36,12 @@ jobs:
           mkdir -p linux-arch-dia
           rsync -a subprojects/linux-arch-dia/site/ linux-arch-dia/
 
+      - name: Stage llm-arch-dia
+        run: |
+          rm -rf llm-arch-dia
+          mkdir -p llm-arch-dia
+          rsync -a subprojects/llm-arch-dia/site/ llm-arch-dia/
+
       # enablement 需要非 GITHUB_TOKEN 的 PAT,故不启用;
       # 请先在 Settings → Pages → Source 选择 GitHub Actions。
       - uses: actions/configure-pages@v6

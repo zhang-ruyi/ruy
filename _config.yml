@@ -19,4 +19,3 @@ exclude:
   - .gitignore
   - Gemfile
   - Gemfile.lock
-  - llm-arch-dia-src
