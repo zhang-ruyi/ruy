@@ -7,10 +7,7 @@ description: "按数据在 GPU HBM、LMCache L1、NVMe L2 中的真实视图,拆
 ---
 LLM 推理 · vLLM / LMCache · 源码基线 vLLM `c724bb3` / LMCache `a4a6888`
 
-超长会话的 KV 不是"一块内存从显存搬到 SSD"那么简单:在 GPU 里它是 **paged block**,进了 LMCache 变成 **chunk × object group × kv_rank 的 MemoryObj**,落到 NVMe 又变成 **一个 key 一个文件**或 **固定 slot**。介质变了,视图也变了。本文按"数据现在在哪、以什么视图存在"来拆这条链路,并对之前文章里两处不准确的说法做纠正:
-
-- **L1 → L2 不是淘汰时顺手写**,而是 L1 写完成后由 `StoreController` 异步写 L2;L1 淘汰是另一条控制器。
-- **L2 不是默认 NVMe**,需要显式配置 FS / raw block 适配器;FS 是"一个 ObjectKey 一个 `.data` 文件"。
+超长会话的 KV 不是"一块内存从显存搬到 SSD"那么简单:在 GPU 里它是 **paged block**,进了 LMCache 变成 **chunk × object group × kv_rank 的 MemoryObj**,落到 NVMe 又变成 **一个 key 一个文件**或 **固定 slot**。介质变了,视图也变了。本文按"数据现在在哪、以什么视图存在"来拆这条链路:GPU paged block → LMCache MemoryObj → NVMe 文件/slot,再按命中路径回载。
 
 ## 一、三种介质,三种视图
 
@@ -123,7 +120,7 @@ L1 不是"一块大缓存",而是一组按介质管理的对象池。对象元�
 
 ## 五、L1 → L2:StoreController,而不是淘汰
 
-这是最容易画错的一段。实际顺序是:
+实际顺序是:
 
 <div class="dataflow">
   <div class="dataflow-head"><span class="dataflow-title">L1 写完成后的异步 L2 下沉</span><span class="dataflow-note">L1 eviction 与 L2 store 是两条控制器</span></div>
@@ -166,17 +163,11 @@ L1 不是"一块大缓存",而是一组按介质管理的对象池。对象元�
 
 回载后,vLLM 的 `get_num_new_matched_tokens`(`scheduler.py:1178`)把外部命中数加到 `num_computed_tokens`(:1256);异步加载时请求会进入 `WAITING_FOR_REMOTE_KVS`(:1585),由 `_update_waiting_for_remote_kv`(:3616)推进。真正 forward 时只算未命中部分,但**最后一个 token 通常仍要重算**(命中上限是 `prompt_length - 1`,且要块对齐)。
 
-## 七、条件与纠正
+## 七、条件
 
-| 之前的说法 | 代码事实 |
-|---|---|
-| L1 淘汰时写入 L2 | L1 写完成后由 `StoreController` 异步写 L2;L1 eviction 是另一条控制器 |
-| 所有 KV 都会存 | 默认只存完整 prompt chunk;decode KV 需要 `save_decode_cache=True` |
-| L2 默认就是 NVMe | L2 要配置适配器;FS 是一个 key 一个 `.data` 文件,raw block 是固定 slot |
-| 命中就省掉全部 prefill | 最后一个 token 通常重算;命中上限 `prompt_length - 1` 且块对齐 |
-| 一个 KV 对象 = 一个 block | L1 对象是 chunk × object group × kv_rank;一个 chunk 可含多个 vLLM block |
+store_kv 的触发条件是 **KV producer + 完整 chunk + `wait_for_save`**;默认只存完整 prompt chunk,decode KV 需要 `save_decode_cache=True`。
 
-store_kv 的触发条件可以精确写成:**KV producer + 完整 chunk + `wait_for_save`**;hit 的条件是:**block hash / model / block size / cache salt 一致 + placement 可读 + bitmap 覆盖**。
+命中条件是 **block hash / model / block size / cache salt 一致 + placement 可读 + bitmap 覆盖**。命中上限是 `prompt_length - 1` 且要求块对齐,因此最后一个 token 通常仍会重算。
 
 ## 八、观测与配置(简)
 
