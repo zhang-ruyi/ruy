@@ -104,13 +104,14 @@ LLM 图集同理(`subprojects/llm-arch-dia`)。也可以在 `pages.yml` 里去�
 
 ## 公众号版
 
-`wechat/` 下是两篇长文的微信适配版(Markdown,已把 CSS 图改成表格):
+`wechat/` 下是两篇长文的微信适配版,提供两种形式:
 
-- `wechat/2026-11-17-vllm-lmcache-long-session.md`
-- `wechat/2026-11-18-io-data-journey.md`
+- **原生 HTML(无图片)**:`wechat/html/*.html`。浏览器打开 → 全选正文 → 复制 → 粘贴到公众号编辑器。样式全部内联,图表用表格表达,不依赖外部 CSS/JS/图片。
+- **Markdown**:`wechat/*.md`。用 [mdnice](https://mdnice.com/) 或 [doocs/md](https://github.com/doocs/md) 渲染后粘贴。
 
-推荐流程:用 [mdnice](https://mdnice.com/) 或 [doocs/md](https://github.com/doocs/md) 打开 Markdown →
-选主题 → 复制预览 → 粘贴到公众号编辑器。若想配图,可从对应网页截图后插入;纯表格版不依赖图片也能完整表达。
+重新生成 HTML:`python3 wechat/build_html.py`。详见 [`wechat/README.md`](wechat/README.md)。
+
+微信限制:会剥离 class / `<style>` / JS / iframe;外链默认不可点击;CSS grid/flex 图表不能原样还原,因此公众号版用表格替代。若必须 100% 还原 Web 效果,只能按小节渲染成图片上传(文字不可选中)。
 
 ## 版权与使用限制
 
