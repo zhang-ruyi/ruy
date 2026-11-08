@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM 推理架构图解</title>
+<style>
+:root { --bg:#0a0e14; --panel:#111923; --card:#151f2b; --border:#29343f; --text:#e8eef7; --muted:#8ea0b4; --accent:#5b9dff; --grad:linear-gradient(120deg,#5b9dff,#8b7bff 50%,#d16bff); }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif; line-height:1.7; }
+a { color:var(--accent); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.top { display:flex; gap:18px; max-width:1100px; margin:0 auto; padding:18px 24px; border-bottom:1px solid var(--border); font-size:13px; }
+.top a:last-child { margin-left:auto; }
+main { max-width:1100px; margin:0 auto; padding:34px 24px 60px; }
+.hero { padding:20px 0 30px; }
+.eyebrow { color:var(--muted); font-size:12px; letter-spacing:.18em; text-transform:uppercase; }
+.hero h1 { font-size:clamp(1.9rem,4vw,2.8rem); margin:8px 0 12px; }
+.lede { color:#c3cfdd; max-width:820px; }
+.meta { color:var(--muted); font-size:12.5px; margin-top:10px; }
+h2 { font-size:20px; margin:34px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(480px,1fr)); gap:18px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.card-head { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.card h3 { font-size:15px; }
+.badge { font-size:11px; color:var(--accent); border:1px solid rgba(91,157,255,.4); background:rgba(91,157,255,.1); padding:2px 9px; border-radius:999px; white-space:nowrap; }
+.card p { color:var(--muted); font-size:12.5px; margin:6px 0 10px; }
+.preview { border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--panel); }
+.preview iframe { width:100%; height:400px; border:0; display:block; }
+.open { display:inline-block; margin-top:10px; font-size:12.5px; }
+@media (max-width:700px) { .grid { grid-template-columns:1fr; } .preview iframe { height:320px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <a href="../diagrams/">← 图集总览</a>
+  <a href="../">博客首页</a>
+  <a href="../posts/?cat=ai-inference">AI 推理文章</a>
+</div>
+<main>
+  <section class="hero">
+    <p class="eyebrow">vLLM × LMCache</p>
+    <h1>LLM 推理架构图解</h1>
+    <p class="lede">执行引擎与 KV 缓存层的核心框架:连续批处理、PagedAttention、前缀缓存,以及 LMCache 的分层 KV 复用、加载与写回。</p>
+    <p class="meta">6 张交互图 · 源码基线 vLLM <code>c724bb3</code> / LMCache <code>a4a6888</code> · 图由 Archify 生成</p>
+  </section>
+
+  <h2>vLLM:执行引擎</h2>
+  <div class="grid">
+    <article class="card">
+      <div class="card-head"><h3>vLLM V1 架构总览</h3><span class="badge">架构图</span></div>
+      <p>API/LLMEngine → EngineCore → Scheduler → KV Cache → GPU Worker → Attention。</p>
+      <div class="preview"><iframe src="./vllm-architecture.html" loading="lazy" title="vLLM V1 架构总览"></iframe></div>
+      <a class="open" href="./vllm-architecture.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+    <article class="card">
+      <div class="card-head"><h3>请求生命周期与连续批处理</h3><span class="badge">时序图</span></div>
+      <p>add_request → schedule → 前缀命中/KV 分配 → execute_model → 采样 → 输出。</p>
+      <div class="preview"><iframe src="./vllm-request-lifecycle.html" loading="lazy" title="vLLM 请求生命周期"></iframe></div>
+      <a class="open" href="./vllm-request-lifecycle.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+    <article class="card">
+      <div class="card-head"><h3>PagedAttention 与前缀缓存</h3><span class="badge">架构图</span></div>
+      <p>block hash → 前缀查找 → 逻辑块 → BlockPool 物理块 → attention gather。</p>
+      <div class="preview"><iframe src="./vllm-paged-attention.html" loading="lazy" title="PagedAttention 与前缀缓存"></iframe></div>
+      <a class="open" href="./vllm-paged-attention.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+  </div>
+
+  <h2>LMCache:KV 缓存层</h2>
+  <div class="grid">
+    <article class="card">
+      <div class="card-head"><h3>LMCache 架构</h3><span class="badge">架构图</span></div>
+      <p>Connector → MP → Lookup/KeyDirectory → StorageManager → L1/L2 → Eviction/Prefetch。</p>
+      <div class="preview"><iframe src="./lmcache-architecture.html" loading="lazy" title="LMCache 架构"></iframe></div>
+      <a class="open" href="./lmcache-architecture.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+    <article class="card">
+      <div class="card-head"><h3>KV 命中、加载与写回</h3><span class="badge">时序图</span></div>
+      <p>lookup → 命中 → 异步 retrieve → forward → 异步 store → L1/L2。</p>
+      <div class="preview"><iframe src="./lmcache-kv-flow.html" loading="lazy" title="LMCache KV 流"></iframe></div>
+      <a class="open" href="./lmcache-kv-flow.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+  </div>
+
+  <h2>联合链路</h2>
+  <div class="grid">
+    <article class="card">
+      <div class="card-head"><h3>vLLM + LMCache 请求全链路</h3><span class="badge">时序图</span></div>
+      <p>本地前缀命中、LMCache 外部命中、未命中重算;异步加载与写回。</p>
+      <div class="preview"><iframe src="./vllm-lmcache-integration.html" loading="lazy" title="vLLM + LMCache 联合链路"></iframe></div>
+      <a class="open" href="./vllm-lmcache-integration.html" target="_blank" rel="noopener">打开交互图 ↗</a>
+    </article>
+  </div>
+</main>
+</body>
+</html>

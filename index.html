@@ -25,22 +25,23 @@ title: 首页
 <section class="section reveal">
   <div class="section-head">
     <h2>精选项目</h2>
-    <a href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">查看全部 →</a>
+    <a href="{{ '/diagrams/' | relative_url }}">查看全部 →</a>
   </div>
   <div class="feature">
     <div class="feature-copy">
       <span class="pill">Archify · Linux v7.4.0-rc1</span>
       <h3>Linux 内核原理图解</h3>
       <p>
-        58 张可交互架构图、时序图与状态机,覆盖进程、内存、网络、文件系统、块层、NVMe、驱动框架与异步 IO。
-        每张概览图附「完整调用链」卡片,另有 7 张函数级深度调用链,所有符号均标注源码 <code>path:line</code>。
+        52 张 Linux 内核原理图 + 6 张 LLM 推理架构图,覆盖进程、内存、网络、文件系统、块层、NVMe、驱动框架,以及 vLLM/LMCache 的推理链路。
+        Linux 图集每张概览图附「完整调用链」卡片,另有 7 张函数级深度调用链,所有符号均标注源码 <code>path:line</code>。
       </p>
       <div class="chips">
         <span>进程管理</span><span>内存管理</span><span>网络协议栈</span>
         <span>文件系统</span><span>设备驱动</span><span>NVMe</span>
         <span>驱动框架</span><span>异步 IO</span><span>LLM 推理</span>
       </div>
-      <a class="btn btn-primary" href="{{ '/linux-arch-dia/' | relative_url }}" target="_blank" rel="noopener">打开交互图集</a>
+      <a class="btn btn-primary" href="{{ '/diagrams/' | relative_url }}">打开图集总览</a>
+      <a class="btn btn-ghost" href="{{ '/llm-arch-dia/' | relative_url }}">LLM 推理架构</a>
     </div>
     <div class="feature-preview">
       <div class="window-bar">

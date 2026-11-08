@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "vLLM + LMCache 联合请求链路",
+    "locale": "zh-CN",
+    "output": "site/LLM推理/vllm-lmcache-integration.html",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "用户请求",
+      "sublabel": "prompt tokens"
+    },
+    {
+      "id": "scheduler",
+      "type": "backend",
+      "label": "vLLM Scheduler",
+      "sublabel": "本地前缀缓存"
+    },
+    {
+      "id": "connector",
+      "type": "backend",
+      "label": "KV Connector",
+      "sublabel": "LMCache 接入"
+    },
+    {
+      "id": "lmcache",
+      "type": "backend",
+      "label": "LMCache",
+      "sublabel": "外部 KV 缓存"
+    },
+    {
+      "id": "gpu",
+      "type": "backend",
+      "label": "GPU 执行",
+      "sublabel": "PagedAttention forward"
+    },
+    {
+      "id": "output",
+      "type": "external",
+      "label": "输出 tokens",
+      "sublabel": "采样结果"
+    }
+  ],
+  "segments": [
+    { "from": 150, "to": 370, "label": "① 命中判定" },
+    { "from": 380, "to": 630, "label": "② LMCache 加载 / ③ 重算" },
+    { "from": 650, "to": 900, "label": "执行与 ④ 异步写回" },
+    { "from": 910, "to": 1010, "label": "⑤ 输出" }
+  ],
+  "messages": [
+    { "id": "submit", "from": "user", "to": "scheduler", "y": 160, "label": "提交请求", "note": "prompt tokens 进入调度", "variant": "emphasis" },
+    { "id": "ask", "from": "scheduler", "to": "connector", "y": 220, "label": "get_num_new_matched_tokens()", "note": "本地前缀缓存先命中;剩余交给 LMCache" },
+    { "id": "lookup", "from": "connector", "to": "lmcache", "y": 280, "label": "外部前缀 lookup", "note": "路径②:L1/L2 命中则异步加载" },
+    { "id": "hit", "from": "lmcache", "to": "connector", "y": 340, "label": "命中 token 数", "note": ">0 路径②;=0 路径③", "variant": "return" },
+    { "id": "answer", "from": "connector", "to": "scheduler", "y": 400, "label": "(num_hit, async)", "note": "路径①:本地命中部分直接复用", "variant": "return" },
+    { "id": "load", "from": "scheduler", "to": "connector", "y": 460, "label": "start_load_kv() 异步 retrieve", "note": "仅路径②命中时提交", "variant": "emphasis" },
+    { "id": "retrieve", "from": "connector", "to": "lmcache", "y": 520, "label": "retrieve 命中 KV", "note": "L1 直接拷贝;L2 先预取", "variant": "dashed" },
+    { "id": "to-paged", "from": "lmcache", "to": "gpu", "y": 580, "label": "写入 paged KV", "note": "异步,与 forward 重叠" },
+    { "id": "forward", "from": "scheduler", "to": "gpu", "y": 640, "label": "forward()", "note": "路径③:未命中部分在此重算", "variant": "emphasis" },
+    { "id": "new-kv", "from": "gpu", "to": "scheduler", "y": 700, "label": "新 KV / logits", "note": "新计算 KV 留在 paged buffer", "variant": "return" },
+    { "id": "wait-save", "from": "scheduler", "to": "connector", "y": 760, "label": "wait_for_save()", "note": "路径④:forward 退出前冲刷 store" },
+    { "id": "store", "from": "connector", "to": "lmcache", "y": 820, "label": "store KV", "note": "写入 L1,逐出下沉 L2", "variant": "dashed" },
+    { "id": "store-done", "from": "lmcache", "to": "connector", "y": 880, "label": "store complete", "variant": "return" },
+    { "id": "sample", "from": "gpu", "to": "output", "y": 930, "label": "采样输出 tokens" },
+    { "id": "reply", "from": "output", "to": "user", "y": 985, "label": "返回结果", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "user", "from": 155, "to": 990, "type": "external" },
+    { "participant": "scheduler", "from": 160, "to": 950, "type": "backend" },
+    { "participant": "connector", "from": 220, "to": 890, "type": "backend" },
+    { "participant": "lmcache", "from": 275, "to": 890, "type": "backend" },
+    { "participant": "gpu", "from": 575, "to": 940, "type": "backend" },
+    { "participant": "output", "from": 925, "to": 990, "type": "external" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "三条路径",
+      "items": [
+        "① 本地命中:vLLM 前缀缓存命中的部分直接复用,不进入 LMCache",
+        "② LMCache 命中:外部 KVCache 命中 token 由 start_load_kv 异步加载",
+        "③ 未命中:剩余 token 在 GPU forward 中重算"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "异步语义",
+      "items": [
+        "get_num_new_matched_tokens 的第二返回值表示是否异步加载",
+        "加载与 forward 计算重叠,降低首 token 延迟",
+        "wait_for_save 异步写回新计算的 KV,不阻塞下一次调度"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "阅读说明",
+      "items": [
+        "本图为 vLLM 与 LMCache 的跨仓库综合链路,不对应单一源码行",
+        "LMCache 内部呈现在另一张架构图与 KV 流时序图中"
+      ]
+    }
+  ]
+}

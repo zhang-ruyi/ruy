@@ -16,7 +16,7 @@ vLLM 自带的 paged KV 和 prefix caching 已经能在**单个引擎实例内�
 <p><strong>先给结论:</strong> LMCache 不是“更快的磁盘”,而是一层以 chunk/ObjectKey 为索引、以 L1/L2 分层、通过 vLLM connector 接入的两级 KV 缓存。它复用的是“已经算过的前缀状态”,不是“文件”。</p>
 </div>
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/lmcache-architecture.html' | relative_url }}" loading="lazy" title="LMCache 架构:KVCache 缓存层"></iframe><figcaption>图 1:LMCache MP 架构。vLLM 侧是 connector 与 scheduler/worker adapter,服务侧是 MP server、LookupModule、KeyDirectory 与 StorageManager,L1/L2 再向下分层。</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/lmcache-architecture.html' | relative_url }}" loading="lazy" title="LMCache 架构:KVCache 缓存层"></iframe><figcaption>图 1:LMCache MP 架构。vLLM 侧是 connector 与 scheduler/worker adapter,服务侧是 MP server、LookupModule、KeyDirectory 与 StorageManager,L1/L2 再向下分层。</figcaption></figure>
 
 ## 一、定位:在 prefill 之前多问一句"这段前缀算过吗"
 
@@ -44,7 +44,7 @@ MP 模式的组件可以按"谁在调用谁"分成四段。
 
 **第四段是全局放置视图。** `KeyDirectory`(`lmcache/v1/mp_coordinator/views/key_directory.py:175`)属于 MP coordinator,不是每个缓存 server 的本地哈希表。它通过 cache event 汇聚"哪个实例、哪一层、哪个 backend 上有这个 key",`lookup` 返回每个 key 的 `Placement` 列表(`key_directory.py:305`)。这里要区分两个层次:请求热路径上的前缀命中主要依赖本地 `StorageManager` 的 L1/L2 状态;coordinator 的 `KeyDirectory` 提供的是**跨实例的全局放置视图**,用于路由、淘汰和运维观测。把两者混为一谈,是读 MP 架构时最常见的误解之一。
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/lmcache-kv-flow.html' | relative_url }}" loading="lazy" title="LMCache KV 命中、加载与写回"></iframe><figcaption>图 2:一次请求的 KV 命中与写回时序。scheduler 先 LOOKUP,worker 再 RETRIEVE 到 vLLM paged KV;前向结束后 STORE 回 L1,并由后台控制器决定是否继续下沉到 L2。</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/lmcache-kv-flow.html' | relative_url }}" loading="lazy" title="LMCache KV 命中、加载与写回"></iframe><figcaption>图 2:一次请求的 KV 命中与写回时序。scheduler 先 LOOKUP,worker 再 RETRIEVE 到 vLLM paged KV;前向结束后 STORE 回 L1,并由后台控制器决定是否继续下沉到 L2。</figcaption></figure>
 
 ## 三、数据模型:chunk、ObjectKey、object group、kv_rank 与 bitmap
 

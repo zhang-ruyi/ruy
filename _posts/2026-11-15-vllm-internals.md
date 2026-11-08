@@ -30,7 +30,7 @@ vLLM 的三件核心武器正好对应这三点：**连续批处理**（continuo
 | 模型执行 | `GPUModelRunner` | 组装输入、block table、slot mapping、采样 | `vllm/v1/worker/gpu/model_runner.py:201`、`:1649`、`:1810` |
 | 注意力 | attention backend | 按 block table 做分页 attention | `vllm/v1/attention/backends/flash_attn.py` 等 |
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/vllm-architecture.html' | relative_url }}" loading="lazy" title="vLLM 架构分层"></iframe><figcaption>图 1:vLLM V1 的分层结构。调度与 KV 管理位于 EngineCore 进程内，Worker 只消费 SchedulerOutput 并执行前向。</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/vllm-architecture.html' | relative_url }}" loading="lazy" title="vLLM 架构分层"></iframe><figcaption>图 1:vLLM V1 的分层结构。调度与 KV 管理位于 EngineCore 进程内，Worker 只消费 SchedulerOutput 并执行前向。</figcaption></figure>
 
 这里有两个容易忽略的细节。第一，`LLMEngine` 在当前代码里被标注为“Legacy LLMEngine for backwards compatibility”（`vllm/v1/engine/llm_engine.py:55`），真正的服务入口通常是异步引擎，但它们最终都通过 `EngineCoreClient` 把请求送进同一个 `EngineCore`。第二，调度器只存在于 EngineCore 一侧；Worker 不做“这一步该跑谁”的决策，只接收 `SchedulerOutput` 里的 `num_scheduled_tokens`、block id 增量和已缓存请求的 diff。这种“调度集中、执行分散”的设计避免了多 rank 各自调度导致的不一致，也让 TP/PP 下的 block table 可以按同一份 block id 构造。
 
@@ -47,7 +47,7 @@ engine_core_outputs = self.scheduler.update_from_output(scheduler_output, model_
 
 这是 `EngineCore.step()` 的骨架（`vllm/v1/engine/core.py:713`）。注意 `execute_model(..., non_block=True)`：执行是异步提交的，EngineCore 可以在等待 GPU 的同时做 grammar bitmask 等 CPU 侧工作；如果启用 batch queue，还可以继续调度下一批，形成流水。
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/vllm-request-lifecycle.html' | relative_url }}" loading="lazy" title="vLLM 请求生命周期"></iframe><figcaption>图 2:请求从 waiting 到 running、再到完成的生命周期。抢占会把请求退回 waiting，并清空已计算的 KV 计数。</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/vllm-request-lifecycle.html' | relative_url }}" loading="lazy" title="vLLM 请求生命周期"></iframe><figcaption>图 2:请求从 waiting 到 running、再到完成的生命周期。抢占会把请求退回 waiting，并清空已计算的 KV 计数。</figcaption></figure>
 
 `SchedulerOutput` 是调度器与执行器之间的契约，包含：首次调度的请求全量数据 `scheduled_new_reqs`、已调度请求的增量 `scheduled_cached_reqs`、每个请求本步要算的 token 数 `num_scheduled_tokens`、投机解码草稿 `scheduled_spec_decode_tokens`、新分配需要清零的 block id 等（`vllm/v1/core/sched/output.py:220`）。Worker 端会为每个请求维护一份请求状态和 block table；新请求通过 `NewRequestData.block_ids` 一次性写入，后续步骤只追加新增块（`vllm/v1/core/sched/output.py:47`、`vllm/v1/worker/gpu/model_runner.py:1305`、`vllm/v1/worker/gpu/block_table.py:125`）。
 
@@ -112,7 +112,7 @@ num_new_tokens = min(num_new_tokens, token_budget, input_budget - draft_slots)
 
 ## 四、PagedAttention：把 KV Cache 变成页表
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/vllm-paged-attention.html' | relative_url }}" loading="lazy" title="PagedAttention 逻辑块与物理块"></iframe><figcaption>图 3:逻辑块通过 block table 映射到物理块。相同前缀的逻辑块可以指向同一物理块，引用计数归零后才回到空闲队列。</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/vllm-paged-attention.html' | relative_url }}" loading="lazy" title="PagedAttention 逻辑块与物理块"></iframe><figcaption>图 3:逻辑块通过 block table 映射到物理块。相同前缀的逻辑块可以指向同一物理块，引用计数归零后才回到空闲队列。</figcaption></figure>
 
 ### 4.1 逻辑块、物理块与 block table
 

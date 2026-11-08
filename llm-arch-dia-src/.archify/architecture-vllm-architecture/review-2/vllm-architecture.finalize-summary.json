@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/zhang/opencode/code_analsys/.archify/architecture-vllm-architecture/candidate.json",
+    "sha256": "faf98ad212e480f23373efe230dfbf099b1a29000b799dcd71c35690fc267fe4",
+    "bytes": 9522
+  },
+  "artifact": {
+    "path": "/home/zhang/opencode/code_analsys/site/LLM推理/vllm-architecture.html",
+    "sha256": "937206b21b2fb0ffa4a8de2f8acedbe3748c266ce5297897636dd4a4556161d6",
+    "bytes": 860126
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/zhang/opencode/code_analsys/.archify/architecture-vllm-architecture/review-2/vllm-architecture.finalize.json",
+    "summaryReceipt": "/home/zhang/opencode/code_analsys/.archify/architecture-vllm-architecture/review-2/vllm-architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/zhang/opencode/code_analsys/.archify/architecture-vllm-architecture/review-2/vllm-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-08T04:02:44.764Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3466,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

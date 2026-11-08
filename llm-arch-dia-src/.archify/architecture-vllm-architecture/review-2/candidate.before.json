@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "vLLM V1 架构总览",
+    "locale": "zh-CN",
+    "output": "site/LLM推理/vllm-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/zhang-ruyi/vllm.git",
+      "revision": "c724bb35d4e70201cf0fa6f2f1dcd802c6f9dad4",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "client",
+      "type": "external",
+      "label": "用户 / OpenAI 客户端",
+      "sublabel": "Chat Completions 请求",
+      "pos": [420, 40],
+      "size": [200, 56]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "OpenAI API Server",
+      "sublabel": "FastAPI · /v1 路由",
+      "tag": "HTTP + SSE",
+      "pos": [420, 160],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/entrypoints/openai/api_server.py", "line": 5, "label": "deprecated shim" },
+        { "path": "vllm/entrypoints/launchers/app.py", "line": 19, "label": "build_app" },
+        { "path": "vllm/entrypoints/launchers/api_server/routers.py", "line": 12, "label": "register_api_routers" }
+      ]
+    },
+    {
+      "id": "async_llm",
+      "type": "backend",
+      "label": "AsyncLLM / LLMEngine",
+      "sublabel": "请求接入与输出处理",
+      "tag": "add_request / step",
+      "pos": [420, 290],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/v1/engine/async_llm.py", "line": 94, "label": "AsyncLLM" },
+        { "path": "vllm/v1/engine/llm_engine.py", "line": 54, "label": "LLMEngine" },
+        { "path": "vllm/v1/engine/llm_engine.py", "line": 229, "label": "add_request" }
+      ]
+    },
+    {
+      "id": "engine_core",
+      "type": "backend",
+      "label": "EngineCore / EngineCoreProc",
+      "sublabel": "每步调度—执行—更新",
+      "tag": "step() 循环",
+      "pos": [420, 420],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/v1/engine/core.py", "line": 129, "label": "EngineCore" },
+        { "path": "vllm/v1/engine/core.py", "line": 564, "label": "add_request" },
+        { "path": "vllm/v1/engine/core.py", "line": 713, "label": "step" }
+      ]
+    },
+    {
+      "id": "scheduler",
+      "type": "backend",
+      "label": "Scheduler",
+      "sublabel": "waiting / running · token budget",
+      "tag": "连续批处理",
+      "pos": [420, 550],
+      "size": [220, 68],
+      "sources": [
+        { "path": "vllm/v1/core/sched/scheduler.py", "line": 86, "label": "Scheduler" },
+        { "path": "vllm/v1/core/sched/scheduler.py", "line": 716, "label": "schedule" },
+        { "path": "vllm/v1/core/sched/scheduler.py", "line": 2301, "label": "update_from_output" }
+      ]
+    },
+    {
+      "id": "kv_manager",
+      "type": "database",
+      "label": "KVCacheManager",
+      "sublabel": "前缀缓存 · 槽位分配",
+      "tag": "get_computed_blocks",
+      "pos": [80, 550],
+      "size": [200, 68],
+      "sources": [
+        { "path": "vllm/v1/core/kv_cache_manager.py", "line": 131, "label": "KVCacheManager" },
+        { "path": "vllm/v1/core/kv_cache_manager.py", "line": 288, "label": "get_computed_blocks" },
+        { "path": "vllm/v1/core/kv_cache_manager.py", "line": 401, "label": "allocate_slots" }
+      ]
+    },
+    {
+      "id": "kv_coordinator",
+      "type": "database",
+      "label": "KVCacheCoordinator",
+      "sublabel": "跨 KV 组最长命中",
+      "tag": "find_longest_cache_hit",
+      "pos": [80, 690],
+      "size": [200, 64],
+      "sources": [
+        { "path": "vllm/v1/core/kv_cache_coordinator.py", "line": 89, "label": "KVCacheCoordinator" },
+        { "path": "vllm/v1/core/kv_cache_coordinator.py", "line": 464, "label": "find_longest_cache_hit" }
+      ]
+    },
+    {
+      "id": "block_pool",
+      "type": "database",
+      "label": "BlockPool",
+      "sublabel": "物理块分配/回收 · 哈希缓存",
+      "tag": "free_block_queue",
+      "pos": [80, 820],
+      "size": [200, 64],
+      "sources": [
+        { "path": "vllm/v1/core/block_pool.py", "line": 107, "label": "BlockPool" },
+        { "path": "vllm/v1/core/block_pool.py", "line": 175, "label": "get_cached_block" },
+        { "path": "vllm/v1/core/block_pool.py", "line": 203, "label": "cache_full_blocks" }
+      ]
+    },
+    {
+      "id": "gpu_worker",
+      "type": "backend",
+      "label": "GPUWorker",
+      "sublabel": "执行调度输出 · execute_model",
+      "tag": "模型执行器",
+      "pos": [420, 690],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/v1/worker/gpu_worker.py", "line": 215, "label": "Worker" },
+        { "path": "vllm/v1/worker/gpu_worker.py", "line": 577, "label": "model_runner" },
+        { "path": "vllm/v1/worker/gpu_worker.py", "line": 1442, "label": "execute_model" }
+      ]
+    },
+    {
+      "id": "model_runner",
+      "type": "backend",
+      "label": "GPUModelRunner",
+      "sublabel": "输入准备 · 前向执行",
+      "tag": "block_tables.apply",
+      "pos": [420, 820],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/v1/worker/gpu/model_runner.py", "line": 201, "label": "GPUModelRunner" },
+        { "path": "vllm/v1/worker/gpu/model_runner.py", "line": 1810, "label": "execute_model" },
+        { "path": "vllm/v1/worker/gpu/model_runner.py", "line": 2200, "label": "sample_tokens" }
+      ]
+    },
+    {
+      "id": "attention",
+      "type": "backend",
+      "label": "Attention Backends",
+      "sublabel": "FlashAttention / FlashInfer / Triton",
+      "tag": "AttentionBackendEnum",
+      "pos": [420, 950],
+      "size": [220, 64],
+      "sources": [
+        { "path": "vllm/v1/attention/backends/registry.py", "line": 44, "label": "FLASH_ATTN enum" },
+        { "path": "vllm/v1/attention/backends/registry.py", "line": 355, "label": "register_backend" },
+        { "path": "vllm/v1/attention/backends/flash_attn.py", "line": 286, "label": "FlashAttentionBackend" }
+      ]
+    },
+    {
+      "id": "kv_connector",
+      "type": "messagebus",
+      "label": "KV Connector",
+      "sublabel": "LMCache / NIXL 等",
+      "tag": "P/D · 远端 KV",
+      "pos": [800, 690],
+      "size": [190, 64],
+      "sources": [
+        { "path": "vllm/distributed/kv_transfer/kv_connector/v1/lmcache_connector.py", "line": 68, "label": "LMCacheConnectorV1" },
+        { "path": "vllm/distributed/kv_transfer/kv_connector/v1/nixl/connector.py", "line": 78, "label": "NixlBaseConnector" },
+        { "path": "vllm/distributed/kv_transfer/kv_connector/v1/base.py", "line": 181, "label": "KVConnectorBase_V1" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "接入层 · OpenAI API + LLMEngine", "wraps": ["api", "async_llm"], "pad": 18 },
+    { "kind": "region", "label": "引擎核心层", "wraps": ["engine_core", "scheduler"], "pad": 18 },
+    { "kind": "region", "label": "KV 缓存层", "wraps": ["kv_manager", "kv_coordinator", "block_pool"], "pad": 18 },
+    { "kind": "region", "label": "GPU 执行层", "wraps": ["gpu_worker", "model_runner", "attention"], "pad": 18 }
+  ],
+  "connections": [
+    { "id": "client-api", "from": "client", "to": "api", "label": "HTTP /v1", "variant": "emphasis" },
+    { "id": "api-async", "from": "api", "to": "async_llm", "label": "add_request", "variant": "emphasis" },
+    { "id": "async-engine", "from": "async_llm", "to": "engine_core", "label": "EngineCoreClient", "variant": "emphasis" },
+    { "id": "engine-scheduler", "from": "engine_core", "to": "scheduler", "label": "schedule()" },
+    { "id": "scheduler-kv", "from": "scheduler", "to": "kv_manager", "label": "前缀命中 + 分配" },
+    { "id": "kv-coordinator", "from": "kv_manager", "to": "kv_coordinator", "label": "find_longest_cache_hit" },
+    { "id": "coordinator-pool", "from": "kv_coordinator", "to": "block_pool", "label": "哈希 → 块" },
+    { "id": "engine-worker", "from": "engine_core", "to": "gpu_worker", "label": "execute_model", "variant": "emphasis" },
+    { "id": "worker-runner", "from": "gpu_worker", "to": "model_runner", "label": "execute_model" },
+    { "id": "runner-attention", "from": "model_runner", "to": "attention", "label": "每层调用" },
+    { "id": "scheduler-connector", "from": "scheduler", "to": "kv_connector", "label": "KV 传输钩子", "variant": "dashed" },
+    { "id": "connector-worker", "from": "kv_connector", "to": "gpu_worker", "label": "save / load KV", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "分层职责",
+      "items": [
+        "OpenAI API 与 LLMEngine 负责请求接入、输出处理与流式返回",
+        "EngineCore 每步依次调用 schedule、execute_model 与 update_from_output",
+        "GPUWorker 持有 GPUModelRunner，并落到具体注意力后端"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "连续批处理",
+      "items": [
+        "Scheduler 不区分 prefill / decode 阶段，只比较已算 token 与目标 token",
+        "每步在 token budget 内混合 waiting 准入与 running 追加",
+        "update_from_output 推进 num_computed_tokens，并决定结束或抢占"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "KV 复用与旁路",
+      "items": [
+        "KVCacheManager 通过 KVCacheCoordinator 查找前缀命中，再在 BlockPool 分配物理块",
+        "KV Connector 走旁路：调度侧匹配远端 KV，worker 侧执行保存与加载",
+        "LMCache 与 NIXL 是同一连接器抽象下的具体实现"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "LMCache KV 命中、加载与写回",
+    "locale": "zh-CN",
+    "output": "site/LLM推理/lmcache-kv-flow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/zhang-ruyi/LMCache.git",
+      "revision": "a4a688827def88f1df3e9af5fad43245913fca36",
+      "link_mode": "local-only"
+    }
+  },
+  "participants": [
+    {
+      "id": "sched",
+      "type": "backend",
+      "label": "vLLM Scheduler",
+      "sublabel": "请求调度 / 本地前缀缓存",
+      "sources": [
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 1349, "label": "get_num_new_matched_tokens" },
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 1569, "label": "update_state_after_alloc" }
+      ]
+    },
+    {
+      "id": "connector",
+      "type": "backend",
+      "label": "LMCache Connector",
+      "sublabel": "LMCacheMPConnector",
+      "sources": [
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 594, "label": "class LMCacheMPConnector" },
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 1663, "label": "build_connector_meta" },
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 1083, "label": "wait_for_save" }
+      ]
+    },
+    {
+      "id": "lookup",
+      "type": "backend",
+      "label": "LookupModule",
+      "sublabel": "KeyDirectory 命中判定",
+      "sources": [
+        { "path": "lmcache/v1/multiprocess/modules/lookup.py", "line": 136, "label": "class LookupModule" },
+        { "path": "lmcache/v1/multiprocess/modules/lookup.py", "line": 199, "label": "lookup" },
+        { "path": "lmcache/v1/mp_coordinator/views/key_directory.py", "line": 305, "label": "KeyDirectory.lookup" }
+      ]
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "StorageManager",
+      "sublabel": "L1: DRAM / DEVDAX / GDS",
+      "sources": [
+        { "path": "lmcache/v1/distributed/storage_manager.py", "line": 131, "label": "class StorageManager" },
+        { "path": "lmcache/v1/distributed/storage_manager.py", "line": 148, "label": "create_l1_managers" }
+      ]
+    },
+    {
+      "id": "l2",
+      "type": "database",
+      "label": "L2 Adapters",
+      "sublabel": "FS / NIXL / Mooncake",
+      "sources": [
+        { "path": "lmcache/v1/distributed/l2_adapters/factory.py", "line": 62, "label": "register_l2_adapter_factory" },
+        { "path": "lmcache/v1/distributed/l2_adapters/fs_l2_adapter.py", "line": 254, "label": "class FSL2Adapter" }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker Adapter",
+      "sublabel": "retrieve / store",
+      "sources": [
+        { "path": "lmcache/integration/vllm/vllm_multi_process_adapter.py", "line": 1063, "label": "LMCacheMPWorkerAdapter" }
+      ]
+    },
+    {
+      "id": "paged",
+      "type": "backend",
+      "label": "vLLM Paged KV",
+      "sublabel": "forward / GPU 计算",
+      "sources": [
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 996, "label": "start_load_kv" },
+        { "path": "lmcache/integration/vllm/lmcache_mp_connector.py", "line": 1083, "label": "wait_for_save" }
+      ]
+    }
+  ],
+  "segments": [
+    { "from": 150, "to": 435, "label": "前缀查询与命中判定" },
+    { "from": 450, "to": 790, "label": "异步加载与前向" },
+    { "from": 800, "to": 1095, "label": "异步写回" }
+  ],
+  "messages": [
+    { "id": "ask-matched", "from": "sched", "to": "connector", "y": 160, "label": "get_num_new_matched_tokens()", "note": "vLLM 询问外部可加载 token 数", "variant": "emphasis" },
+    { "id": "do-lookup", "from": "connector", "to": "lookup", "y": 220, "label": "lookup(packed_token_ids)", "note": "LookupModule.lookup(199) → KeyDirectory.lookup(305)" },
+    { "id": "submit-prefetch", "from": "lookup", "to": "storage", "y": 280, "label": "submit_prefetch_task()", "note": "先查 L1,未命中再看 L2" },
+    { "id": "l2-query", "from": "storage", "to": "l2", "y": 340, "label": "L2 查询 / 加载", "note": "FS / raw block / NIXL / Mooncake / HF3FS" },
+    { "id": "matched-return", "from": "lookup", "to": "connector", "y": 400, "label": "matched tokens", "note": "hit>0 命中;0 未命中", "variant": "return" },
+    { "id": "hit-return", "from": "connector", "to": "sched", "y": 455, "label": "(num_hit, async=True)", "variant": "return" },
+    { "id": "update-state", "from": "sched", "to": "connector", "y": 515, "label": "update_state_after_alloc(1569)", "note": "登记异步 block;READY→WAITING_FOR_LOAD" },
+    { "id": "start-load", "from": "connector", "to": "worker", "y": 575, "label": "build_connector_meta(1663) → start_load_kv(996)", "note": "提交异步 retrieve", "variant": "emphasis" },
+    { "id": "retrieve", "from": "worker", "to": "storage", "y": 635, "label": "batched_submit_retrieve_requests", "note": "异步;与 forward 重叠", "variant": "dashed" },
+    { "id": "to-paged", "from": "storage", "to": "paged", "y": 695, "label": "命中 KV 写入 paged buffer", "note": "L1 直接拷贝;L2 先预取到 L1", "variant": "emphasis" },
+    { "id": "forward", "from": "worker", "to": "paged", "y": 750, "label": "加载完成 → forward()", "note": "加载完成,计算开始" },
+    { "id": "wait-save", "from": "sched", "to": "connector", "y": 810, "label": "wait_for_save(1083)", "note": "forward 退出前冲刷 store" },
+    { "id": "store-submit", "from": "connector", "to": "worker", "y": 870, "label": "batched_submit_store_requests", "note": "异步写回新计算的 KV", "variant": "dashed" },
+    { "id": "store", "from": "worker", "to": "storage", "y": 930, "label": "store KV", "note": "写入 L1,必要时下沉 L2", "variant": "dashed" },
+    { "id": "evict-l2", "from": "storage", "to": "l2", "y": 985, "label": "逐出 / 下沉到 L2", "variant": "dashed" },
+    { "id": "store-done", "from": "worker", "to": "connector", "y": 1035, "label": "store complete", "variant": "return" },
+    { "id": "round-done", "from": "connector", "to": "sched", "y": 1085, "label": "本轮完成", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "sched", "from": 155, "to": 1090, "type": "backend" },
+    { "participant": "connector", "from": 160, "to": 1050, "type": "backend" },
+    { "participant": "lookup", "from": 210, "to": 410, "type": "backend" },
+    { "participant": "storage", "from": 265, "to": 1000, "type": "database" },
+    { "participant": "l2", "from": 330, "to": 990, "type": "database" },
+    { "participant": "worker", "from": 570, "to": 950, "type": "backend" },
+    { "participant": "paged", "from": 690, "to": 758, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "命中判定",
+      "items": [
+        "get_num_new_matched_tokens 返回外部可加载 token 数,第二项表示是否异步加载",
+        "hit>0 为 LMCache 命中,0 为未命中并交给 vLLM 重算",
+        "LookupModule 先提交 prefetch,KeyDirectory 提供跨实例放置视图"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "L1 / L2",
+      "items": [
+        "L1 为 DRAM、Device-DAX、GDS;命中可直接拷贝到 paged KV",
+        "L2 为文件系统、raw block、NIXL、Mooncake、HF3FS 等外部适配器",
+        "L2 命中经 Prefetch Controller 预取进 L1,再写入 paged buffer"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "异步加载与写回",
+      "items": [
+        "start_load_kv 提交异步 retrieve,与 forward 计算重叠",
+        "update_state_after_alloc 登记异步加载的 block,状态进入 WAITING_FOR_LOAD",
+        "wait_for_save 在 forward 退出前冲刷 store,新 KV 异步写回 L1/L2"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+---
+layout: default
+title: 图集
+description: Linux 内核与 LLM 推理架构图集
+---
+<section class="page-head">
+  <h1>图集</h1>
+  <p>两条独立的交互图集:Linux 内核原理图解、LLM 推理架构图解。所有图都标注了源码路径与版本。</p>
+</section>
+
+<section class="section">
+  <div class="cat-grid">
+    <a class="cat-card" href="{{ '/linux-arch-dia/' | relative_url }}" style="--accent:#f59e0b">
+      <span class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+          <path d="m7 9 3 3-3 3M13 15h4"></path>
+        </svg>
+      </span>
+      <h3>Linux 内核原理图解</h3>
+      <p>进程、内存、网络、文件系统、块层、NVMe、驱动框架、并发;52 张交互图 + 7 张函数级深度调用链。</p>
+      <span class="cat-meta">52 张 · 进入 →</span>
+    </a>
+
+    <a class="cat-card" href="{{ '/llm-arch-dia/' | relative_url }}" style="--accent:#8b5cf6">
+      <span class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+          <path d="M9 9h6v6H9zM4 9h-1M4 15h-1M21 9h-1M21 15h-1"></path>
+        </svg>
+      </span>
+      <h3>LLM 推理架构图解</h3>
+      <p>vLLM 的连续批处理、PagedAttention 与前缀缓存;LMCache 的分层 KV 缓存、命中/写回;以及两者的联合请求链路。</p>
+      <span class="cat-meta">6 张 · 进入 →</span>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>说明</h2>
+  </div>
+  <p class="muted">Linux 图集由 <code>linux-arch-dia</code> 子模块提供;LLM 图集位于博客仓库的 <code>llm-arch-dia/</code>。两者都用 Archify 生成独立交互 HTML。</p>
+</section>

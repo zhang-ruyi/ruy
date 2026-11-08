@@ -47,15 +47,15 @@ LMCache 补的正是这一块:把 KV 从“某个实例的显存”提升为“�
 
 先看执行引擎本身。vLLM V1 的调度器在一个 step 内决定哪些请求进入 batch、每个请求算多少 token，然后把结果交给 worker 执行;`KVCacheManager` 负责 block 的分配、回收和前缀查找。
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/vllm-architecture.html' | relative_url }}" loading="lazy" title="vLLM 执行引擎架构"></iframe><figcaption>图 1:vLLM V1 执行引擎——调度器、KV 管理与 worker 执行的分层结构</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/vllm-architecture.html' | relative_url }}" loading="lazy" title="vLLM 执行引擎架构"></iframe><figcaption>图 1:vLLM V1 执行引擎——调度器、KV 管理与 worker 执行的分层结构</figcaption></figure>
 
 再看缓存层。LMCache 的 MP 模式把缓存做成独立 server，vLLM 进程通过 connector 与 server 通信;server 内部由 `StorageManager` 统一管理 L1 与 L2，`reserve_write`/`finish_write` 负责写入，`submit_prefetch_task`/`query_prefetch_status` 负责把 L2 的数据预取到 L1。
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/lmcache-architecture.html' | relative_url }}" loading="lazy" title="LMCache 分层缓存架构"></iframe><figcaption>图 2:LMCache 分层缓存——connector 适配、MP server 与 L1/L2 存储管理</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/lmcache-architecture.html' | relative_url }}" loading="lazy" title="LMCache 分层缓存架构"></iframe><figcaption>图 2:LMCache 分层缓存——connector 适配、MP server 与 L1/L2 存储管理</figcaption></figure>
 
 把两层拼起来，就得到联合架构:请求在 vLLM 侧被调度，调度过程中通过 connector 查询 LMCache，命中则把外部 token 计入已计算量并异步搬运 KV，未命中则回落到本地 prefill;执行结束后再按策略把新产生的 KV 存回 LMCache。
 
-<figure class="diagram"><iframe src="{{ '/linux-arch-dia/LLM推理/vllm-lmcache-integration.html' | relative_url }}" loading="lazy" title="vLLM 与 LMCache 联合请求链路"></iframe><figcaption>图 3:vLLM + LMCache 联合链路——本地命中、外部命中、未命中重算与异步存取</figcaption></figure>
+<figure class="diagram"><iframe src="{{ '/llm-arch-dia/vllm-lmcache-integration.html' | relative_url }}" loading="lazy" title="vLLM 与 LMCache 联合请求链路"></iframe><figcaption>图 3:vLLM + LMCache 联合链路——本地命中、外部命中、未命中重算与异步存取</figcaption></figure>
 
 ## 四、完整请求链路
 
